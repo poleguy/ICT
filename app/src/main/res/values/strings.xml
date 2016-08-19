@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">ICT</string>
+    <string name="action_settings">Settings</string>
+    <string name="gps_not_available">No GPS on device. Will use phone GPS when available.</string>
+    <string name="acquiring_gps">Acquiring GPS Fix ...</string>
+    <string name="permission_rationale">App requires location permission to function, tap GPS icon.</string>
+    <string name="ok">OK</string>
+    <string name="speed_format">%.0f</string>
+    <string name="playback_speed_format">%.2f</string>
+</resources>
