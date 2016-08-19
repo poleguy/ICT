@@ -1,10 +1,6 @@
 package com.phantompowerracing.ict;
 
 import android.content.Intent;
-import android.media.AudioFormat;
-import android.media.AudioManager;
-import android.media.MediaFormat;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -16,23 +12,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.media.MediaPlayer;
 import java.io.File;
-import android.media.MediaExtractor;
-import android.media.MediaCodec;
-import android.media.AudioTrack;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 
-import android.os.Bundle;
 import android.os.Handler;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v4.app.FragmentActivity;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.util.Log;
-import android.view.View;
-import android.view.Menu;
-import android.view.MenuItem;
 
 
 import android.app.AlertDialog;
@@ -67,13 +48,7 @@ public class IctActivity extends AppCompatActivity implements
         ActivityCompat.OnRequestPermissionsResultCallback,
         LocationListener{
 
-    protected MediaExtractor extractor;
-    protected AudioTrack audioTrack;
-    protected int inputBufIndex;
-    protected Boolean doStop = false;
     private final AudioPlayer audioPlayer = new AudioPlayer("ICT_turkey.wav");
-    boolean b_vis = false;
-    boolean b_vis_running = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -96,26 +71,6 @@ public class IctActivity extends AppCompatActivity implements
                 //audioPlayerB("/data/local","tis.wav");
                 audioPlayer.play();
 
-//                if (!b_vis_running) {
-//                    b_vis_running = true;
-//                    final Runnable r = new Runnable() {
-//                        public void run() {
-//                            if (b_vis) {
-//                                b_vis = !b_vis;
-//                                mBlinkingGpsStatusDotView.setVisibility(View.VISIBLE);
-//                                mHandler.postDelayed(this, 800);
-//                            } else {
-//                                b_vis = !b_vis;
-//                                mBlinkingGpsStatusDotView.setVisibility(View.INVISIBLE);
-//                                mHandler.postDelayed(this, 200);
-//                            }
-//
-//
-//                        }
-//                    };
-
-//                    mHandler.postDelayed(r, 1);
-//                }
 
             }
         });
@@ -214,6 +169,13 @@ public class IctActivity extends AppCompatActivity implements
             return true;
         }
         if (id == R.id.action_exit) {
+            //http://stackoverflow.com/questions/17719634/how-to-exit-an-android-app-using-code
+            Intent intent = new Intent(Intent.ACTION_MAIN);
+            intent.addCategory(Intent.CATEGORY_HOME);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            // change this to finish all processes via a message
+            android.os.Process.killProcess(android.os.Process.myPid());
             return true;
         }
         if (id == R.id.action_settings) {
@@ -239,150 +201,9 @@ public class IctActivity extends AppCompatActivity implements
         }
     }
 
-    //MediaCodec codec = MediaCodec.createByCodecName(name);
-    private MediaCodec decoder;
-    MediaFormat mOutputFormat;
-    boolean isEOS = false;
-    boolean sawOutputEOS = false;
-    long extractorSampleTime = 0;
     double m_relative_speed = 0.5;
-    int mPlaybackRate;
-
-    public MediaCodec.Callback mDecoderCallback = new MediaCodec.Callback() {
-        @Override
-        public void onInputBufferAvailable(MediaCodec mc, int inputBufferId) {
-            //ByteBuffer inputBuffer = mc.getInputBuffer(inputBufferId);
-            // fill inputBuffer with valid data
-            //codec.queueInputBuffer(inputBufferId, …);
-
-            if(!isEOS){
-                ByteBuffer buffer = mc.getInputBuffer(inputBufferId);
-                int sampleSize = extractor.readSampleData(buffer, 0);
-                if (sampleSize < 0) {
-
-                    Log.d("DecodeActivity", "InputBuffer BUFFER_FLAG_END_OF_STREAM");
-                    decoder.queueInputBuffer(inputBufferId, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-                    isEOS = true;
-                } else {
-                    extractorSampleTime = extractor.getSampleTime();
-                    //Log.d("DecodeActivity", "InputBuffer Available");
-                    decoder.queueInputBuffer(inputBufferId, 0, sampleSize, extractorSampleTime, 0);
-                    extractor.advance();
-                }
-            }
-        }
-
-        @Override
-        public void onOutputBufferAvailable(MediaCodec mc, int outputBufferId,MediaCodec.BufferInfo info) {
-            //ByteBuffer outputBuffer = mc.getOutputBuffer(outputBufferId);
-            //MediaFormat bufferFormat = mc.getOutputFormat(outputBufferId); // option A
-            // bufferFormat is equivalent to mOutputFormat
-            // outputBuffer is ready to be processed or rendered.
-            //…
-            //codec.releaseOutputBuffer(outputBufferId, …);
-
-            if(!sawOutputEOS){
-                ByteBuffer buffer = mc.getOutputBuffer(outputBufferId);
-                // https://dpsm.wordpress.com/2012/07/28/android-mediacodec-decoded/
-                final byte[] chunk = new byte[info.size];
-                buffer.get(chunk); // Read the buffer all at once
-                buffer.clear(); // ** MUST DO!!! OTHERWISE THE NEXT TIME YOU GET THIS SAME BUFFER BAD THINGS WILL HAPPEN
-
-                if (chunk.length > 0) {
-                    audioTrack.write(chunk, 0, chunk.length);
-                    //Log.d("DecodeActivity", "playing chunk " + chunk.length);
-                }
-
-                if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-                    sawOutputEOS = true;
-                    Log.d("DecodeActivity", "OutputBuffer BUFFER_FLAG_END_OF_STREAM");
-                }
-
-            }
-
-            mc.releaseOutputBuffer(outputBufferId, false /* render */);
-        }
-
-        @Override
-        public void onOutputFormatChanged(MediaCodec mc, MediaFormat format) {
-            // Subsequent data will conform to new format.
-            // Can ignore if using getOutputFormat(outputBufferId)
-            mOutputFormat = format; // option B
-            mPlaybackRate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE);
-            setPlaybackSpeed();
 
 
-        }
-
-
-
-        @Override
-        public void onError(MediaCodec mc, MediaCodec.CodecException e) {
-            //
-        }
-    };
-
-    public void audioPlayerB(String path, String fileName){
-        extractor = new MediaExtractor();
-
-        try {
-            extractor.setDataSource(path + File.separator + fileName);
-            int numTracks = extractor.getTrackCount();
-            for (int i = 0; i < numTracks; ++i) {
-                MediaFormat format = extractor.getTrackFormat(i);
-                String mime = format.getString(MediaFormat.KEY_MIME);
-                //if (weAreInterestedInThisTrack) {
-                if(i == 0) {
-                    extractor.selectTrack(i);
-                    decoder = MediaCodec.createDecoderByType(mime);
-                    //codec.setCallback(
-                    decoder.configure(format,
-                            null, // We don't have a surface in audio decoding
-                            null, // No crypto
-                            0); // 0 for decoding
-                    break;
-                }
-            }
-
-            // Adding Callback
-            decoder.setCallback(mDecoderCallback);
-            decoder.start();
-//            ByteBuffer inputBuffer = ByteBuffer.allocate(1024);
-
-
-//            while (extractor.readSampleData(inputBuffer,0)>=0){
-//                int trackIndex = extractor.getSampleTrackIndex();
-//                long presentationTimeUs = extractor.getSampleTime();
-//
-//                extractor.advance();
-//            }
-//
-//            extractor.release();
-        } catch (Exception e) {
-            e.printStackTrace();
-            extractor = null;
-        }
-        //extractor = null;
-    }
-
-
-
-//    public void setRelativePlaybackSpeed(float speed) {
-//        mRelativePlaybackSpeed = speed;
-//        if (mAudioTrack != null) {
-//            mAudioTrack.setPlaybackRate((int) (mSrcRate * mRelativePlaybackSpeed));
-//        }
-//    }
-//
-//    public void setVolume(float vol) {
-//        if (mAudioTrack != null) {
-//            mAudioTrack.setStereoVolume(vol, vol);
-//        }
-//    }
-//
-//    public boolean isPlaying() {
-//        return isPlaying;
-//    }
 
 
     private void setupViews() {
@@ -485,7 +306,13 @@ public class IctActivity extends AppCompatActivity implements
         // 2.0 at 20MPH
         // 1.0 at 6.7MPH
         // 0.5 at 0MPH
-        m_relative_speed =  0.3+1.5*mSpeed/20.0;
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        //http://stackoverflow.com/questions/17844511/android-preferences-error-string-cannot-be-cast-to-int
+        int normalSpeed = Integer.parseInt(sharedPreferences.getString("normal_speed", "20"));
+        double minRate = 0.3;
+        double slope = (1.0-minRate);
+
+        m_relative_speed =  minRate+slope*mSpeed/(normalSpeed);
         if (audioPlayer != null) {
             //int rate = (int) (((double) mPlaybackRate) * (m_relative_speed));
             audioPlayer.setPlaybackSpeed(m_relative_speed);
@@ -508,10 +335,12 @@ public class IctActivity extends AppCompatActivity implements
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         boolean useRandom = sharedPreferences.getBoolean("random_speed", false);
+        //http://stackoverflow.com/questions/17844511/android-preferences-error-string-cannot-be-cast-to-int
+        int normalSpeed = Integer.parseInt(sharedPreferences.getString("normal_speed", "20"));
         if (useRandom) {
             // mode to test with random speed changes
             int minSpeed = 0; // MPH
-            int maxSpeed = 20; // MPH
+            int maxSpeed = normalSpeed; // MPH
             mSpeed = r.nextInt(maxSpeed - minSpeed) + minSpeed;
         } else {
             mSpeed = location.getSpeed() * MPH_IN_METERS_PER_SECOND;

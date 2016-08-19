@@ -12,6 +12,14 @@
             android:title="Random Speed"
             android:defaultValue="true"
             />
+        <ListPreference
+            android:key="normal_speed"
+            android:title="Normal Speed"
+            android:summary="Speed at which music sounds normal in MPH"
+            android:defaultValue="60"
+            android:entries="@array/normalSpeed"
+            android:entryValues="@array/normalSpeedValues"
+            />
         <CheckBoxPreference
             android:key="perform_updates"
             android:summary="Enable or disable data updates"

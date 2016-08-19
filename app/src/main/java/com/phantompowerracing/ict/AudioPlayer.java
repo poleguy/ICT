@@ -89,7 +89,7 @@ public class AudioPlayer implements Runnable {
             audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC,
                     //format.getInteger(MediaFormat.KEY_SAMPLE_RATE),
                     44100,
-                    AudioFormat.CHANNEL_OUT_STEREO,
+                    AudioFormat.CHANNEL_OUT_MONO,
                     AudioFormat.ENCODING_PCM_16BIT,
                     bufferSize,
                     AudioTrack.MODE_STREAM);
@@ -115,6 +115,12 @@ public class AudioPlayer implements Runnable {
     public void play() {
         Log.d("play", "Playing");
         isPlaying = true;
+    }
+
+    public void pause() {
+        // for now, will stop at the end of the song
+        Log.d("pause", "pause");
+        isPlaying = false;
     }
 
     HandlerThread callbackThread;
@@ -163,20 +169,7 @@ public class AudioPlayer implements Runnable {
                 }
             }
 
-            //http://stackoverflow.com/questions/5853167/runnable-with-a-parameter
-//            void audio_track_write(byte[] chunk) {
-//                class OneShotTask implements Runnable {
-//                    byte [] byt;
-//                    OneShotTask(byte[] b) { byt = b; }
-//                    public void run() {
-//                        audioTrack.write(byt, 0, byt.length);
-//                        Log.d("DecodeActivity", "playing chunk " + byt.length);
-//                        Log.d("a t w","thread: " + android.os.Process.myTid());
-//                    }
-//                }
-//                Thread t = new Thread(new OneShotTask(chunk));
-//                t.start();
-//            }
+
 
 
             //@Override
@@ -198,13 +191,14 @@ public class AudioPlayer implements Runnable {
                     if (chunk.length > 0) {
                         audioTrack.write(chunk, 0, chunk.length);
                         //audio_track_write(chunk);
-                        Log.d("DecodeActivity", "playing chunk " + chunk.length);
-                        Log.d("onOutput","thread: " + android.os.Process.myTid());
+                        //Log.d("DecodeActivity", "playing chunk " + chunk.length);
+                        //Log.d("onOutput","thread: " + android.os.Process.myTid());
                     }
 
                     if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
                         sawOutputEOS = true;
-                        isPlaying = false;
+                        // comment out to run forever:
+                        //isPlaying = false;
                         Log.d("DecodeActivity", "OutputBuffer BUFFER_FLAG_END_OF_STREAM");
                     }
 
