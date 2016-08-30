@@ -9,6 +9,8 @@ android {
         targetSdkVersion 23
         versionCode 1
         versionName "1.0"
+        // Enabling multidex support.
+        multiDexEnabled true
     }
     buildTypes {
         release {
@@ -26,4 +28,5 @@ dependencies {
 
     compile 'com.google.android.gms:play-services:9.2.1'
     compile 'com.android.support:support-v4:23.0.1'
+    compile 'com.android.support:multidex:1.0.1'
 }

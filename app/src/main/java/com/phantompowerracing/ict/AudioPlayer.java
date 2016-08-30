@@ -362,7 +362,7 @@ public class AudioPlayer implements Runnable {
     //private Handler mHandler = new Handler();
 
 
-
+    private double smoothedRate = 0.0;
 
     public void setPlaybackSpeed(double speed) {
         // hit speed of
@@ -373,11 +373,17 @@ public class AudioPlayer implements Runnable {
         m_relative_speed =  speed;
         if (audioTrack != null) {
             int rate = (int) (((double) mPlaybackRate) * (m_relative_speed));
-            audioTrack.setPlaybackRate(rate);
-            Log.d("AudioPlayer", "new rate " + rate);
+            double alpha = 0.25;
+            smoothedRate = rate*alpha+smoothedRate*(1.0-alpha);
+            audioTrack.setPlaybackRate((int)Math.round(smoothedRate));
+            Log.d("AudioPlayer", "new rate " + smoothedRate);
         }
 
 
+    }
+
+    public double getSmoothedRate() {
+        return smoothedRate;
     }
 
     // https://github.com/mstorsjo/android-decodeencodetest/blob/23a0621390404785e02a1ae7c24dfb67f9854129/src/com/example/decodeencodetest/ExtractDecodeEditEncodeMuxTest.java

@@ -49,6 +49,11 @@ public class IctActivity extends AppCompatActivity implements
         LocationListener{
 
     private final AudioPlayer audioPlayer = new AudioPlayer("ICT_turkey.wav");
+
+    Handler smoothHandler = new Handler();
+    int delay = 100; // msec
+    double smoothedRate = 0.0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -147,6 +152,21 @@ public class IctActivity extends AppCompatActivity implements
         //mGoogleApiClient.connect();
         //.addApi(Wearable.API)
         //requestLocation();
+
+        smoothHandler.postDelayed(new Runnable() {
+            public void run () {
+                // filter every 100msec
+
+                double alpha = 0.05;
+                smoothedRate = m_relative_speed * alpha + smoothedRate * (1.0 - alpha);
+                if (audioPlayer != null) {
+                    audioPlayer.setPlaybackSpeed(smoothedRate);
+                }
+                Log.d("smooth", "new rate " + smoothedRate);
+                smoothHandler.postDelayed(this,delay);
+            }
+        }, delay);
+
     }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -223,8 +243,9 @@ public class IctActivity extends AppCompatActivity implements
     // source: https://github.com/googlesamples/android-SpeedTracker/blob/master/Wearable/src/main/java/com/example/android/wearable/speedtracker/WearableMainActivity.java
     private static final String TAG = "LocationActivity";
     private boolean mGpsPermissionApproved;
-    private static final long UPDATE_INTERVAL_MS = TimeUnit.SECONDS.toMillis(5);
-    private static final long FASTEST_INTERVAL_MS = TimeUnit.SECONDS.toMillis(5);
+    //private static final long UPDATE_INTERVAL_MS = TimeUnit.SECONDS.toMillis(1);
+    private static final long UPDATE_INTERVAL_MS = 100;
+    private static final long FASTEST_INTERVAL_MS = 100;
     // Id to identify Location permission request.
     private static final int REQUEST_GPS_PERMISSION = 1;
 
@@ -313,14 +334,12 @@ public class IctActivity extends AppCompatActivity implements
         double slope = (1.0-minRate);
 
         m_relative_speed =  minRate+slope*mSpeed/(normalSpeed);
-        if (audioPlayer != null) {
-            //int rate = (int) (((double) mPlaybackRate) * (m_relative_speed));
-            audioPlayer.setPlaybackSpeed(m_relative_speed);
-            //Log.d("DecodeActivity", "new rate " + rate);
-        }
+
 
 
     }
+
+
 
     Random r = new Random();
     @Override
