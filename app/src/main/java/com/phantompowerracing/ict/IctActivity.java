@@ -2,8 +2,6 @@ package com.phantompowerracing.ict;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -31,7 +29,7 @@ import com.google.android.gms.location.LocationListener;
 
 
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
+
 import android.support.v4.app.ActivityCompat;
 import android.location.Location;
 import android.support.annotation.NonNull;
@@ -40,6 +38,7 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
 import android.Manifest;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 public class IctActivity extends AppCompatActivity implements
@@ -60,21 +59,34 @@ public class IctActivity extends AppCompatActivity implements
         setContentView(R.layout.activity_ict);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
+        Log.d("onCreate","onCreate");
+        super.onStart();
         audioPlayer.start(); // start thread, use .play() to actually play
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
+        //FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        //FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        ImageButton imgButton =(ImageButton)findViewById(R.id.imageButton);
+        imgButton.setOnClickListener(new View.OnClickListener() {
+//        fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                //Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+                //        .setAction("Action", null).show();
  
 
                 //audioPlayerB("/sdcard","Carmen Ring.mp3");
                 //audioPlayerB("/sdcard/Download","ICT_turkey.wav");
                 //audioPlayerB("/data/local","tis.wav");
-                audioPlayer.play();
+                ImageButton imgButton =(ImageButton)findViewById(R.id.imageButton);
+                if (audioPlayer.isPlaying()) {
+                    audioPlayer.pause();
+                    Log.d("click", "pause");
+                    imgButton.setImageResource(R.drawable.mr_ic_play_light);
+                } else {
+                    audioPlayer.play();
+                    Log.d("click", "play");
+                    imgButton.setImageResource(R.drawable.mr_ic_pause_light);
+                }
 
 
             }
@@ -162,7 +174,7 @@ public class IctActivity extends AppCompatActivity implements
                 if (audioPlayer != null) {
                     audioPlayer.setPlaybackSpeed(smoothedRate);
                 }
-                Log.d("smooth", "new rate " + smoothedRate);
+                //Log.d("smooth", "new rate " + smoothedRate);
                 smoothHandler.postDelayed(this,delay);
             }
         }, delay);
@@ -208,18 +220,18 @@ public class IctActivity extends AppCompatActivity implements
 
         return super.onOptionsItemSelected(item);
     }
-    public void audioPlayer(String path, String fileName){
-        //set up MediaPlayer
-        MediaPlayer mp = new MediaPlayer();
-
-        try {
-            mp.setDataSource(path + File.separator + fileName);
-            mp.prepare();
-            mp.start();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+//    public void audioPlayer(String path, String fileName){
+//        //set up MediaPlayer
+//        MediaPlayer mp = new MediaPlayer();
+//
+//        try {
+//            mp.setDataSource(path + File.separator + fileName);
+//            mp.prepare();
+//            mp.start();
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
 
     double m_relative_speed = 0.5;
 
@@ -249,12 +261,12 @@ public class IctActivity extends AppCompatActivity implements
     // Id to identify Location permission request.
     private static final int REQUEST_GPS_PERMISSION = 1;
 
-    private static final float MPH_IN_METERS_PER_SECOND = 2.23694f;
+    private static final double MPH_IN_METERS_PER_SECOND = 2.23694;
     private static final long INDICATOR_DOT_FADE_AWAY_MS = 500L;
 
     private GoogleApiClient mGoogleApiClient;
     private boolean mWaitingForGpsSignal;
-    private float mSpeed;
+    private double mSpeed;
 
     private String mGpsPermissionNeededMessage;
     private String mAcquiringGpsMessage;
@@ -344,8 +356,8 @@ public class IctActivity extends AppCompatActivity implements
     Random r = new Random();
     @Override
     public void onLocationChanged(Location location) {
-        Log.d(TAG, "onLocationChanged() : " + location);
-        Log.d("onLocation","thread: " + android.os.Process.myTid());
+        //Log.d(TAG, "onLocationChanged() : " + location);
+        //Log.d("onLocation","thread: " + android.os.Process.myTid());
 
         if (mWaitingForGpsSignal) {
             mWaitingForGpsSignal = false;
@@ -354,6 +366,7 @@ public class IctActivity extends AppCompatActivity implements
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         boolean useRandom = sharedPreferences.getBoolean("random_speed", false);
+        boolean useFast = sharedPreferences.getBoolean("fast_speed", false);
         //http://stackoverflow.com/questions/17844511/android-preferences-error-string-cannot-be-cast-to-int
         int normalSpeed = Integer.parseInt(sharedPreferences.getString("normal_speed", "20"));
         if (useRandom) {
@@ -361,8 +374,11 @@ public class IctActivity extends AppCompatActivity implements
             int minSpeed = 0; // MPH
             int maxSpeed = normalSpeed; // MPH
             mSpeed = r.nextInt(maxSpeed - minSpeed) + minSpeed;
+        } else if(useFast) {
+            mSpeed = normalSpeed * 1.5 * MPH_IN_METERS_PER_SECOND;
         } else {
             mSpeed = location.getSpeed() * MPH_IN_METERS_PER_SECOND;
+
         }
         setPlaybackSpeed();
 

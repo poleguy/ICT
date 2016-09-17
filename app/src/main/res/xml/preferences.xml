@@ -10,6 +10,12 @@
             android:key="random_speed"
             android:summary="Use fake random speed in place of GPS data"
             android:title="Random Speed"
+            android:defaultValue="false"
+            />
+        <CheckBoxPreference
+            android:key="fast_speed"
+            android:summary="Use fake Fast speed in place of GPS data"
+            android:title="Force Fast Speed"
             android:defaultValue="true"
             />
         <ListPreference

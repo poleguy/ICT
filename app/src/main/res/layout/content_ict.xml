@@ -66,5 +66,6 @@
         android:id="@+id/imageButton"
         android:layout_below="@+id/relative_playback_speed"
         android:layout_alignParentStart="true"
-        android:src="@drawable/play" />
+        android:src="@drawable/mr_ic_play_light" />
+
 </RelativeLayout>

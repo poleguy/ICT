@@ -3,20 +3,12 @@ package com.phantompowerracing.ict;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.MediaFormat;
-import android.os.AsyncTask;
-import android.os.Bundle;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.media.MediaPlayer;
+
 import java.io.File;
 import android.media.MediaExtractor;
 import android.media.MediaCodec;
@@ -24,42 +16,14 @@ import android.media.AudioTrack;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import android.os.Bundle;
 import android.os.Handler;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v4.app.FragmentActivity;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.util.Log;
-import android.view.View;
-import android.view.Menu;
-import android.view.MenuItem;
 
 
-import android.app.AlertDialog;
-import android.content.DialogInterface;
-
-import android.content.pm.PackageManager;
-
-import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.common.api.Status;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.location.LocationListener;
 
 
 import java.util.concurrent.TimeUnit;
-import android.support.v4.app.ActivityCompat;
-import android.location.Location;
-import android.support.annotation.NonNull;
 
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
-
-import android.Manifest;
 import android.widget.TextView;
 
 /**
@@ -71,7 +35,16 @@ public class AudioPlayer implements Runnable {
     protected int inputBufIndex;
     protected Boolean doStop = false;
     private String mPath;
-    private boolean isPlaying = false;
+    private boolean isRepeating = false;
+    private boolean isPaused = true;
+    //MediaCodec codec = MediaCodec.createByCodecName(name);
+    private MediaCodec decoder;
+    MediaFormat mOutputFormat;
+    boolean isEOS = false;
+    boolean sawOutputEOS = true;
+    long extractorSampleTime = 0;
+    double m_relative_speed = 0.3;
+    int mPlaybackRate;
 
     public AudioPlayer(String path) {
         mPath = path;
@@ -97,7 +70,7 @@ public class AudioPlayer implements Runnable {
         }
 
         // Don't forget to start playing
-        audioTrack.play();
+        //audioTrack.play();
         isEOS = false;
         sawOutputEOS = false;
         extractorSampleTime = 0;
@@ -112,22 +85,36 @@ public class AudioPlayer implements Runnable {
 
     }
 
+    public boolean isRepeating() {
+        return isRepeating;
+    }
+    public boolean isPlaying() {
+        boolean bPlaying = false;
+        int state = audioTrack.getPlayState();
+        if (state == audioTrack.PLAYSTATE_PLAYING) {
+            bPlaying = true;
+        }
+        return bPlaying;
+    }
     public void play() {
         Log.d("play", "Playing");
-        isPlaying = true;
+
+        isRepeating = true;
+        isPaused = false;
     }
 
     public void pause() {
         // for now, will stop at the end of the song
         Log.d("pause", "pause");
-        isPlaying = false;
+        isPaused = true;
+        //audioTrack.pause();
     }
 
     HandlerThread callbackThread;
     CallbackHandler handler;
     public void start() {
         Log.d("AudioPlayer", "start");
-        //isPlaying = true;
+        //isRepeating = true;
         doStop = false;
         callbackThread = new HandlerThread("CallbackThread");
         callbackThread.start();
@@ -154,6 +141,14 @@ public class AudioPlayer implements Runnable {
 
                 if(!isEOS){
                     ByteBuffer buffer = mc.getInputBuffer(inputBufferId);
+                    while(isPaused) {
+                        Log.d("callback","paused");
+                        try {
+                            Thread.sleep(100);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
                     int sampleSize = extractor.readSampleData(buffer, 0);
                     if (sampleSize < 0) {
 
@@ -198,7 +193,7 @@ public class AudioPlayer implements Runnable {
                     if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
                         sawOutputEOS = true;
                         // comment out to run forever:
-                        //isPlaying = false;
+                        //isRepeating = false;
                         Log.d("DecodeActivity", "OutputBuffer BUFFER_FLAG_END_OF_STREAM");
                     }
 
@@ -227,28 +222,78 @@ public class AudioPlayer implements Runnable {
         };
 
         Log.d("run", "Playing");
+        prepare();
+        Log.d("play", "starting audio player");
+        audioPlayerB("/sdcard/Download", "ICT_turkey.wav",DecoderCallback);
+        Log.d("play","thread: " + android.os.Process.myTid());
+        //audioPlayerB("/data/local","tis.wav");
+        int i = 0;
         while(true) {
-            if (isPlaying) {
-                if (sawOutputEOS) {
-                    prepare();
-                    Log.d("play", "starting audio player");
-                    audioPlayerB("/sdcard/Download", "ICT_turkey.wav",DecoderCallback);
-                    Log.d("play","thread: " + android.os.Process.myTid());
-                    //audioPlayerB("/data/local","tis.wav");
+
+            //if (isRepeating) {
+                //if (sawOutputEOS) {
+                //if(audioTrack.getPlayState() == audioTrack.PLAYSTATE_STOPPED) {
+                //    Log.d("play", "stopped");
+                //}
+                if(audioTrack.getPlayState() == audioTrack.PLAYSTATE_PAUSED) {
+                    Log.d("play","playstate paused");
+                    if(!isPaused) {
+                        isPaused = false;
+                        audioTrack.play();
+                    }
+                } else if(audioTrack.getPlayState() == audioTrack.PLAYSTATE_STOPPED) {
+                    Log.d("play","playstate stopped");
+
+                    if(isRepeating) {
+                        if (sawOutputEOS) {
+                            //if(audioTrack.getPlayState() != audioTrack.PLAYSTATE_PAUSED) {
+                            prepare();
+                            String[] tracks = {"ICT_turkey.wav","ICT_entertainer.wav"};
+                            i = (i+1)%tracks.length;
+                            String track = tracks[i];
+                            Log.d("play", String.format("starting audio player: %d, %s" ,i,track));
+                            audioPlayerB("/sdcard/Download", track, DecoderCallback);
+                            Log.d("play", "thread: " + android.os.Process.myTid());
+                            //}
+                        }
+                        audioTrack.play();
+                    }
+                } else {
+                    Log.d("play","playstate running");
+                    if(isPaused) {
+                        audioTrack.pause();
+                    } else if(isRepeating) {
+                        if (isEOS && sawOutputEOS) {
+                            // start a new track if the old one finished
+                            //if(audioTrack.getPlayState() != audioTrack.PLAYSTATE_PAUSED) {
+                            prepare();
+                            String[] tracks = {"ICT_turkey.wav","ICT_entertainer.wav"};
+                            i = (i+1)%tracks.length;
+                            String track = tracks[i];
+                            Log.d("play", String.format("starting audio player: %d, %s" ,i,track));
+                            audioPlayerB("/sdcard/Download", track, DecoderCallback);
+                            Log.d("play", "thread: " + android.os.Process.myTid());
+                            //}
+                        }
+                        audioTrack.play();
+                    }
                 }
-            }
+                    //if(audioTrack.getPlayState() == audioTrack.PLAYSTATE_STOPPED) {
+
+                    //}
+                    //audioPlayerB("/data/local","tis.wav");
+                //}
+            //} else {
+                try {
+                    Thread.sleep(100); // to not hog the processor
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            //}
         }
 
     }
 
-    //MediaCodec codec = MediaCodec.createByCodecName(name);
-    private MediaCodec decoder;
-    MediaFormat mOutputFormat;
-    boolean isEOS = false;
-    boolean sawOutputEOS = true;
-    long extractorSampleTime = 0;
-    double m_relative_speed = 0.3;
-    int mPlaybackRate;
 
 
     public void audioPlayerB(String path, String fileName,MediaCodec.Callback DecoderCallback){
@@ -330,8 +375,8 @@ public class AudioPlayer implements Runnable {
 //        }
 //    }
 //
-//    public boolean isPlaying() {
-//        return isPlaying;
+//    public boolean isRepeating() {
+//        return isRepeating;
 //    }
 
 
@@ -362,7 +407,7 @@ public class AudioPlayer implements Runnable {
     //private Handler mHandler = new Handler();
 
 
-    private double smoothedRate = 0.0;
+
 
     public void setPlaybackSpeed(double speed) {
         // hit speed of
@@ -373,17 +418,11 @@ public class AudioPlayer implements Runnable {
         m_relative_speed =  speed;
         if (audioTrack != null) {
             int rate = (int) (((double) mPlaybackRate) * (m_relative_speed));
-            double alpha = 0.25;
-            smoothedRate = rate*alpha+smoothedRate*(1.0-alpha);
-            audioTrack.setPlaybackRate((int)Math.round(smoothedRate));
-            Log.d("AudioPlayer", "new rate " + smoothedRate);
+            audioTrack.setPlaybackRate(rate);
+            //Log.d("AudioPlayer", "new rate " + rate);
         }
 
 
-    }
-
-    public double getSmoothedRate() {
-        return smoothedRate;
     }
 
     // https://github.com/mstorsjo/android-decodeencodetest/blob/23a0621390404785e02a1ae7c24dfb67f9854129/src/com/example/decodeencodetest/ExtractDecodeEditEncodeMuxTest.java
