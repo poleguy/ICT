@@ -1,14 +1,24 @@
 package com.phantompowerracing.ict;
 
+import android.app.PendingIntent;
+import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Intent;
+import android.os.Binder;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.os.PowerManager;
+import android.provider.SyncStateContract;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.content.Context;
 import android.media.MediaPlayer;
+
+import java.io.BufferedWriter;
 import java.io.File;
 
 import android.os.Handler;
@@ -20,14 +30,21 @@ import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 
 import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.location.LocationListener;
 
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Random;
 
 import android.support.v4.app.ActivityCompat;
@@ -41,13 +58,25 @@ import android.Manifest;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
+// Will this work?
+// http://stackoverflow.com/questions/34918675/android-location-service-didnt-work-in-background
+
+// or this?
+// http://stackoverflow.com/questions/36761116/how-to-fused-location-run-in-background-service-continuously
+// https://gist.github.com/blackcj/20efe2ac885c7297a676
+
+//public class IctActivity extends AppCompatActivity implements
 public class IctActivity extends AppCompatActivity implements
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
         ActivityCompat.OnRequestPermissionsResultCallback,
         LocationListener{
 
+    public static Location mCurrentLocation;
+
+
     private final AudioPlayer audioPlayer = new AudioPlayer("ICT_turkey.wav");
+    PowerManager.WakeLock cpuWakeLock;
 
     Handler smoothHandler = new Handler();
     int delay = 100; // msec
@@ -61,6 +90,20 @@ public class IctActivity extends AppCompatActivity implements
         setSupportActionBar(toolbar);
         Log.d("onCreate","onCreate");
         super.onStart();
+
+
+        // acquire a wake lock:
+        // http://stackoverflow.com/questions/29743886/android-gps-location-in-service-off-if-device-sleep
+
+        //in onCreate of your service
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        cpuWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
+                "gps_service");
+        cpuWakeLock.acquire();
+
+
+
+
         audioPlayer.start(); // start thread, use .play() to actually play
 
         //FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -356,7 +399,7 @@ public class IctActivity extends AppCompatActivity implements
     Random r = new Random();
     @Override
     public void onLocationChanged(Location location) {
-        //Log.d(TAG, "onLocationChanged() : " + location);
+        Log.d(TAG, "onLocationChanged() : " + location);
         //Log.d("onLocation","thread: " + android.os.Process.myTid());
 
         if (mWaitingForGpsSignal) {
@@ -411,6 +454,7 @@ public class IctActivity extends AppCompatActivity implements
                 @Override
                 public void run() {
                     mBlinkingGpsStatusDotView.setVisibility(View.VISIBLE);
+                    Log.d("green_dot","got gps update");
                 }
             });
             mBlinkingGpsStatusDotView.setVisibility(View.VISIBLE);
@@ -535,6 +579,23 @@ public class IctActivity extends AppCompatActivity implements
         super.onResume();
         if (mGoogleApiClient != null) {
             mGoogleApiClient.connect();
+        }
+    }
+
+    public class LocationReceiver extends BroadcastReceiver {
+
+        private String TAG = this.getClass().getSimpleName();
+
+        private LocationResult mLocationResult;
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // Need to check and grab the Intent's extras like so
+            if(LocationResult.hasResult(intent)) {
+                this.mLocationResult = LocationResult.extractResult(intent);
+                Log.i(TAG, "Location Received: " + this.mLocationResult.toString());
+            }
+
         }
     }
 }

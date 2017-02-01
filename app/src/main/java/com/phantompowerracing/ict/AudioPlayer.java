@@ -242,7 +242,7 @@ public class AudioPlayer implements Runnable {
                         audioTrack.play();
                     }
                 } else if(audioTrack.getPlayState() == audioTrack.PLAYSTATE_STOPPED) {
-                    Log.d("play","playstate stopped");
+                    // Log.d("play","playstate stopped");
 
                     if(isRepeating) {
                         if (sawOutputEOS) {
@@ -259,7 +259,7 @@ public class AudioPlayer implements Runnable {
                         audioTrack.play();
                     }
                 } else {
-                    Log.d("play","playstate running");
+                    // Log.d("play","playstate running");
                     if(isPaused) {
                         audioTrack.pause();
                     } else if(isRepeating) {
