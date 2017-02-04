@@ -20,6 +20,11 @@ public final class Constants {
     public static final String RUNNING = "runningInBackground"; // Recording data in background
 
     public static final String APP_PACKAGE_NAME = "com.blackcj.locationtracker";
+	
+	
+    public static final String CLOSED_CONNECTION = "kazy_closed_connection";
+    public static final String LOGIN_NAME = "kazy_login_name";
+
 
     /**
      * Suppress default constructor for noninstantiability

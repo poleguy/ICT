@@ -4,9 +4,11 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.Message;
 import android.os.PowerManager;
 import android.provider.SyncStateContract;
 import android.support.v7.app.AppCompatActivity;
@@ -44,6 +46,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Random;
 
@@ -55,6 +58,7 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
 import android.Manifest;
+import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
@@ -82,26 +86,57 @@ public class IctActivity extends AppCompatActivity implements
     int delay = 100; // msec
     double smoothedRate = 0.0;
 
+    private PowerManager mPowerManager;
+    private PowerManager.WakeLock mWakeLock;
+
+    private ArrayList<String> arrayList;
+    private ClientListAdapter mAdapter;
+    private TcpClient mTcpClient;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_ict);
+        // getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         Log.d("onCreate","onCreate");
         super.onStart();
 
+        mPowerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
 
+        turnOffScreen();
+
+
+        arrayList = new ArrayList<String>();
+
+        //final EditText editText = (EditText) findViewById(R.id.editText);
+        //Button send = (Button) findViewById(R.id.send_button);
+
+        //relate the listView from java to the one created in xml
+        //mList = (ListView) findViewById(R.id.list);
+        mAdapter = new ClientListAdapter(this, arrayList);
+        //mList.setAdapter(mAdapter);
+        // connect to the server
+        new ConnectTask().execute("");
+
+        startPollingCar();
         // acquire a wake lock:
         // http://stackoverflow.com/questions/29743886/android-gps-location-in-service-off-if-device-sleep
 
+
         //in onCreate of your service
-        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        cpuWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
-                "gps_service");
-        cpuWakeLock.acquire();
+        //PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        //cpuWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
+        //        "gps_service");
+        //cpuWakeLock.acquire();
 
-
+		// https://developer.android.com/training/basics/firstapp/starting-activity.html#RespondToButton
+		// start second activity to connect to car and get speed data
+		//Intent intent = new Intent(this, ClientActivity.class);
+        //intent.putExtra(EXTRA_MESSAGE, message);
+        //startActivity(intent);
 
 
         audioPlayer.start(); // start thread, use .play() to actually play
@@ -223,6 +258,22 @@ public class IctActivity extends AppCompatActivity implements
         }, delay);
 
     }
+
+    public void turnOnScreen(){
+        // turn on screen
+        Log.v("ProximityActivity", "ON!");
+        mWakeLock = mPowerManager.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "tag");
+        mWakeLock.acquire();
+    }
+
+    //@TargetApi(21) //Suppress lint error for PROXIMITY_SCREEN_OFF_WAKE_LOCK
+    public void turnOffScreen(){
+        // turn off screen
+        Log.v("ProximityActivity", "OFF!");
+        mWakeLock = mPowerManager.newWakeLock(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK, "tag");
+        mWakeLock.acquire();
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -244,6 +295,15 @@ public class IctActivity extends AppCompatActivity implements
             return true;
         }
         if (id == R.id.action_exit) {
+
+            // disconnect
+            mTcpClient.stopClient();
+            mTcpClient = null;
+            // clear the data set
+            arrayList.clear();
+            // notify the adapter that the data set has changed.
+            mAdapter.notifyDataSetChanged();
+
             //http://stackoverflow.com/questions/17719634/how-to-exit-an-android-app-using-code
             Intent intent = new Intent(Intent.ACTION_MAIN);
             intent.addCategory(Intent.CATEGORY_HOME);
@@ -410,6 +470,7 @@ public class IctActivity extends AppCompatActivity implements
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         boolean useRandom = sharedPreferences.getBoolean("random_speed", false);
         boolean useFast = sharedPreferences.getBoolean("fast_speed", false);
+        boolean useCar = true;
         //http://stackoverflow.com/questions/17844511/android-preferences-error-string-cannot-be-cast-to-int
         int normalSpeed = Integer.parseInt(sharedPreferences.getString("normal_speed", "20"));
         if (useRandom) {
@@ -419,7 +480,10 @@ public class IctActivity extends AppCompatActivity implements
             mSpeed = r.nextInt(maxSpeed - minSpeed) + minSpeed;
         } else if(useFast) {
             mSpeed = normalSpeed * 1.5 * MPH_IN_METERS_PER_SECOND;
-        } else {
+        } else if(useCar) {
+            //
+        } else
+        {
             mSpeed = location.getSpeed() * MPH_IN_METERS_PER_SECOND;
 
         }
@@ -597,5 +661,79 @@ public class IctActivity extends AppCompatActivity implements
             }
 
         }
+    }
+
+    public class ConnectTask extends AsyncTask<String, String, TcpClient> {
+
+        @Override
+        protected TcpClient doInBackground(String... message) {
+
+            //we create a TCPClient object and
+            mTcpClient = new TcpClient(new TcpClient.OnMessageReceived() {
+                @Override
+                //here the messageReceived method is implemented
+                public void messageReceived(String message) {
+                    //this method calls the onProgressUpdate
+                    publishProgress(message);
+                }
+            });
+            mTcpClient.run();
+
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(String... values) {
+            super.onProgressUpdate(values);
+
+            //in the arrayList we add the messages received from server
+            //arrayList.add(values[0]);
+
+            parseSpeed(values[0]);
+
+            // notify the adapter that the data set has changed. This means that new message received
+            // from server was added to the list
+            mAdapter.notifyDataSetChanged();
+        }
+    }
+
+    void pollCar() {
+        String message = "r 00000010";
+        //sends the message to the server
+        if (mTcpClient != null) {
+            mTcpClient.sendMessage(message);
+        }
+
+        //refresh the list
+        mAdapter.notifyDataSetChanged();
+    }
+
+    Thread timer = new Thread() {
+        public void run () {
+            for (;;) {
+                // do stuff in a separate thread
+                pollCar();
+                uiCallback.sendEmptyMessage(0);
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    };
+    void startPollingCar() {
+        timer.start();
+    }
+
+    private Handler uiCallback = new Handler () {
+        public void handleMessage (Message msg) {
+            // do stuff with UI
+        }
+    };
+
+
+    void parseSpeed(String s) {
+        mSpeed = s.length();
     }
 }
