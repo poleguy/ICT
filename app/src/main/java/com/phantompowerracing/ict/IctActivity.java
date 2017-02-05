@@ -62,6 +62,10 @@ import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
+//http://stackoverflow.com/questions/18279302/how-do-i-perform-a-java-callback-between-classes
+interface SpeedCallback {
+    void setSpeed(double speed);
+}
 // Will this work?
 // http://stackoverflow.com/questions/34918675/android-location-service-didnt-work-in-background
 
@@ -74,6 +78,7 @@ public class IctActivity extends AppCompatActivity implements
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
         ActivityCompat.OnRequestPermissionsResultCallback,
+        SpeedCallback,
         LocationListener{
 
     public static Location mCurrentLocation;
@@ -93,6 +98,9 @@ public class IctActivity extends AppCompatActivity implements
     private ClientListAdapter mAdapter;
     private TcpClient mTcpClient;
 
+    private Ict ict;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -107,7 +115,8 @@ public class IctActivity extends AppCompatActivity implements
         mPowerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
 
         turnOffScreen();
-
+        ict = new Ict();
+        ict.register(this); // register callback
 
         arrayList = new ArrayList<String>();
 
@@ -493,6 +502,10 @@ public class IctActivity extends AppCompatActivity implements
         //addLocationEntry(location.getLatitude(), location.getLongitude());
     }
 
+    // callback for ict
+    public void setSpeed(double speed) {
+        mSpeed = speed;
+    }
 
     private void updateSpeedInViews() {
 
@@ -689,7 +702,8 @@ public class IctActivity extends AppCompatActivity implements
             //in the arrayList we add the messages received from server
             //arrayList.add(values[0]);
 
-            parseSpeed(values[0]);
+            ict.handleMessage(values[0]);
+            //parseSpeed(values[0]);
 
             // notify the adapter that the data set has changed. This means that new message received
             // from server was added to the list
@@ -733,7 +747,4 @@ public class IctActivity extends AppCompatActivity implements
     };
 
 
-    void parseSpeed(String s) {
-        mSpeed = s.length();
-    }
 }
