@@ -42,7 +42,24 @@
             android:entryValues="@array/updateIntervalValues"
             android:dependency="perform_updates"
             />
-
+        <EditTextPreference
+            android:key="car_ip_address"
+            android:summary="Address to get speed data from car"
+            android:title="Car IP Address"
+            android:defaultValue="192.168.1.74"
+            />
+        <EditTextPreference
+            android:key="car_ip_port"
+            android:summary="Port to get speed data from car"
+            android:title="Car IP Port"
+            android:defaultValue="23"
+            />
+        <CheckBoxPreference
+            android:key="speed_from_car"
+            android:summary="Use speed from car, not gps"
+            android:title="Use Car Speed"
+            android:defaultValue="true"
+            />
     </PreferenceCategory>
 
     <PreferenceCategory

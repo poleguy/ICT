@@ -13,8 +13,10 @@ import java.net.Socket;
  */
 public class TcpClient {
 
-    public static final String SERVER_IP = "192.168.1.81"; //your computer IP address
-    public static final int SERVER_PORT = 9750;
+    //public static final String SERVER_IP = "192.168.1.81"; //target IP address
+    public String mServerIp = "192.168.1.74";
+    public int mServerPort = 23;
+    //public static final int SERVER_PORT = 23; //9750
     // message to send to the server
     private String mServerMessage;
     // sends message received notifications
@@ -29,7 +31,9 @@ public class TcpClient {
     /**
      * Constructor of the class. OnMessagedReceived listens for the messages received from server
      */
-    public TcpClient(OnMessageReceived listener) {
+    public TcpClient(String ip_address, int port, OnMessageReceived listener) {
+        mServerIp = ip_address;
+        mServerPort = port;
         mMessageListener = listener;
     }
 
@@ -72,12 +76,12 @@ public class TcpClient {
 
         try {
             //here you must put your computer's IP address.
-            InetAddress serverAddr = InetAddress.getByName(SERVER_IP);
+            InetAddress serverAddr = InetAddress.getByName(mServerIp);
 
-            Log.e("TCP Client", "C: Connecting...");
+            Log.e("TCP Client", String.format("C: Connecting... %s %d",mServerIp,mServerPort));
 
             //create a socket to make the connection with the server
-            Socket socket = new Socket(serverAddr, SERVER_PORT);
+            Socket socket = new Socket(serverAddr, mServerPort);
 
             try {
 

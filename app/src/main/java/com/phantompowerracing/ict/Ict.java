@@ -64,7 +64,7 @@ public class Ict {
         for(SpeedCallback callback : callbacks) {
             Integer reg = parse(s);
             if (reg != null) {
-                int speed = bitSliceGet(reg,7,0);
+                int speed = bitSliceGet(reg,15,0);
                 callback.setSpeed(speed);
             }
         }

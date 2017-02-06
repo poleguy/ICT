@@ -128,7 +128,10 @@ public class IctActivity extends AppCompatActivity implements
         mAdapter = new ClientListAdapter(this, arrayList);
         //mList.setAdapter(mAdapter);
         // connect to the server
-        new ConnectTask().execute("");
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        String ip_address = sharedPreferences.getString("car_ip_address", "192.168.1.74");
+        String ip_port = sharedPreferences.getString("car_ip_port", "23");
+        new ConnectTask().execute(ip_address, ip_port);
 
         startPollingCar();
         // acquire a wake lock:
@@ -199,7 +202,7 @@ public class IctActivity extends AppCompatActivity implements
         mAcquiringGpsMessage = getString(R.string.acquiring_gps);
 
 
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        //SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         //mSpeedLimit = sharedPreferences.getInt(PREFS_SPEED_LIMIT_KEY, SPEED_LIMIT_DEFAULT_MPH);
 
         mSpeed = 0;
@@ -479,7 +482,7 @@ public class IctActivity extends AppCompatActivity implements
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         boolean useRandom = sharedPreferences.getBoolean("random_speed", false);
         boolean useFast = sharedPreferences.getBoolean("fast_speed", false);
-        boolean useCar = true;
+        boolean useCar = sharedPreferences.getBoolean("speed_from_car", false);
         //http://stackoverflow.com/questions/17844511/android-preferences-error-string-cannot-be-cast-to-int
         int normalSpeed = Integer.parseInt(sharedPreferences.getString("normal_speed", "20"));
         if (useRandom) {
@@ -676,13 +679,16 @@ public class IctActivity extends AppCompatActivity implements
         }
     }
 
+
     public class ConnectTask extends AsyncTask<String, String, TcpClient> {
 
         @Override
         protected TcpClient doInBackground(String... message) {
 
+            String ip_address = message[0];
+            int ip_port = Integer.parseInt(message[1]);
             //we create a TCPClient object and
-            mTcpClient = new TcpClient(new TcpClient.OnMessageReceived() {
+            mTcpClient = new TcpClient(ip_address,ip_port, new TcpClient.OnMessageReceived() {
                 @Override
                 //here the messageReceived method is implemented
                 public void messageReceived(String message) {
@@ -702,6 +708,7 @@ public class IctActivity extends AppCompatActivity implements
             //in the arrayList we add the messages received from server
             //arrayList.add(values[0]);
 
+            Log.d(TAG, "from tcp:" + values[0]);
             ict.handleMessage(values[0]);
             //parseSpeed(values[0]);
 
@@ -711,8 +718,17 @@ public class IctActivity extends AppCompatActivity implements
         }
     }
 
+    int pollCarState = 0;
     void pollCar() {
-        String message = "r 00000010";
+
+        // messages
+        String[] messages = {"r 00000080\r",
+                "r 00000081\r",
+                "r 00000082\r",};
+
+        String message = messages[pollCarState];
+        pollCarState = (pollCarState+1) % messages.length; // round robin
+
         //sends the message to the server
         if (mTcpClient != null) {
             mTcpClient.sendMessage(message);
