@@ -1,74 +1,48 @@
 package com.phantompowerracing.ict;
 
-import android.app.PendingIntent;
-import android.app.Service;
+import android.Manifest;
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
-import android.os.AsyncTask;
-import android.os.Binder;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.location.Location;
 import android.os.Bundle;
-import android.os.IBinder;
-import android.os.Message;
+import android.os.Handler;
 import android.os.PowerManager;
-import android.provider.SyncStateContract;
+import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.content.Context;
-import android.media.MediaPlayer;
-
-import java.io.BufferedWriter;
-import java.io.File;
-
-import android.os.Handler;
-
-
-import android.app.AlertDialog;
-import android.content.DialogInterface;
-
-import android.content.pm.PackageManager;
-
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesUtil;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationResult;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.common.api.Status;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.location.LocationListener;
-
-
-import java.io.FileWriter;
-import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Random;
-
-import android.support.v4.app.ActivityCompat;
-import android.location.Location;
-import android.support.annotation.NonNull;
-
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
-
-import android.Manifest;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Status;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
+
+import java.util.Random;
+
+//import java.util.ArrayList;
 //http://stackoverflow.com/questions/18279302/how-do-i-perform-a-java-callback-between-classes
 interface SpeedCallback {
     void setSpeed(double speed);
 }
 // Will this work?
 // http://stackoverflow.com/questions/34918675/android-location-service-didnt-work-in-background
-
 // or this?
 // http://stackoverflow.com/questions/36761116/how-to-fused-location-run-in-background-service-continuously
 // https://gist.github.com/blackcj/20efe2ac885c7297a676
@@ -81,11 +55,7 @@ public class IctActivity extends AppCompatActivity implements
         SpeedCallback,
         LocationListener{
 
-    public static Location mCurrentLocation;
-
-
     private final AudioPlayer audioPlayer = new AudioPlayer("ICT_turkey.wav");
-    PowerManager.WakeLock cpuWakeLock;
 
     Handler smoothHandler = new Handler();
     int delay = 100; // msec
@@ -94,9 +64,8 @@ public class IctActivity extends AppCompatActivity implements
     private PowerManager mPowerManager;
     private PowerManager.WakeLock mWakeLock;
 
-    private ArrayList<String> arrayList;
-    private ClientListAdapter mAdapter;
-    private TcpClient mTcpClient;
+    //private ArrayList<String> arrayList;
+    //private ClientListAdapter mAdapter;
 
     private Ict ict;
 
@@ -106,6 +75,7 @@ public class IctActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_ict);
         // getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -115,25 +85,17 @@ public class IctActivity extends AppCompatActivity implements
         mPowerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
 
         turnOffScreen();
-        ict = new Ict();
-        ict.register(this); // register callback
 
-        arrayList = new ArrayList<String>();
-
-        //final EditText editText = (EditText) findViewById(R.id.editText);
-        //Button send = (Button) findViewById(R.id.send_button);
-
-        //relate the listView from java to the one created in xml
-        //mList = (ListView) findViewById(R.id.list);
-        mAdapter = new ClientListAdapter(this, arrayList);
-        //mList.setAdapter(mAdapter);
-        // connect to the server
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         String ip_address = sharedPreferences.getString("car_ip_address", "192.168.1.74");
-        String ip_port = sharedPreferences.getString("car_ip_port", "23");
-        new ConnectTask().execute(ip_address, ip_port);
+        int ip_port = Integer.parseInt(sharedPreferences.getString("car_ip_port", "23"));
 
-        startPollingCar();
+        ict = new Ict(ip_address, ip_port);
+        ict.register(this); // register callback
+
+        // connect to the server
+        ict.startPollingCar();
+
         // acquire a wake lock:
         // http://stackoverflow.com/questions/29743886/android-gps-location-in-service-off-if-device-sleep
 
@@ -156,31 +118,29 @@ public class IctActivity extends AppCompatActivity implements
         //FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         //FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         ImageButton imgButton =(ImageButton)findViewById(R.id.imageButton);
-        imgButton.setOnClickListener(new View.OnClickListener() {
-//        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                //Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                //        .setAction("Action", null).show();
- 
-
-                //audioPlayerB("/sdcard","Carmen Ring.mp3");
-                //audioPlayerB("/sdcard/Download","ICT_turkey.wav");
-                //audioPlayerB("/data/local","tis.wav");
-                ImageButton imgButton =(ImageButton)findViewById(R.id.imageButton);
-                if (audioPlayer.isPlaying()) {
-                    audioPlayer.pause();
-                    Log.d("click", "pause");
-                    imgButton.setImageResource(R.drawable.mr_ic_play_light);
-                } else {
-                    audioPlayer.play();
-                    Log.d("click", "play");
-                    imgButton.setImageResource(R.drawable.mr_ic_pause_light);
+        if (imgButton != null) {
+            imgButton.setOnClickListener(new View.OnClickListener() {
+                //        fab.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+//                  //audioPlayerB("/sdcard","Carmen Ring.mp3");
+//                  //audioPlayerB("/sdcard/Download","ICT_turkey.wav");
+//                  //audioPlayerB("/data/local","tis.wav");
+                    ImageButton imgButton =(ImageButton)findViewById(R.id.imageButton);
+                    if(imgButton != null) {
+                        if (audioPlayer.isPlaying()) {
+                            audioPlayer.pause();
+                            Log.d("click", "pause");
+                            imgButton.setImageResource(R.drawable.mr_ic_play_light);
+                        } else {
+                            audioPlayer.play();
+                            Log.d("click", "play");
+                            imgButton.setImageResource(R.drawable.mr_ic_pause_light);
+                        }
+                    }
                 }
-
-
-            }
-        });
+            });
+        }
 
         // Enables app to handle 23+ (M+) style permissions.
 
@@ -198,8 +158,8 @@ public class IctActivity extends AppCompatActivity implements
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                         == PackageManager.PERMISSION_GRANTED;
 
-        mGpsPermissionNeededMessage = getString(R.string.permission_rationale);
-        mAcquiringGpsMessage = getString(R.string.acquiring_gps);
+        //mGpsPermissionNeededMessage = getString(R.string.permission_rationale);
+        //mAcquiringGpsMessage = getString(R.string.acquiring_gps);
 
 
         //SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
@@ -303,18 +263,17 @@ public class IctActivity extends AppCompatActivity implements
         //http://stackoverflow.com/questions/17163505/how-to-add-new-item-to-setting-menu-at-android
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_about) {
-            startActivity(new Intent(this, ShowSettingsActivity.class));
+            Intent activity =new Intent(this, ShowSettingsActivity.class);
+            activity.putExtra("EXTRA_CORRPUT_READ_COUNT", ict.corruptReadCount);
+            activity.putExtra("EXTRA_GOOD_READ_COUNT", ict.goodReadCount);
+            activity.putExtra("EXTRA_TOTAL_READ_COUNT", ict.totalReadCount);
+            activity.putExtra("EXTRA_READS_PER_SECOND", ict.readRate);
+            startActivity(activity);
             return true;
         }
         if (id == R.id.action_exit) {
 
-            // disconnect
-            mTcpClient.stopClient();
-            mTcpClient = null;
-            // clear the data set
-            arrayList.clear();
-            // notify the adapter that the data set has changed.
-            mAdapter.notifyDataSetChanged();
+            ict.disconnect();
 
             //http://stackoverflow.com/questions/17719634/how-to-exit-an-android-app-using-code
             Intent intent = new Intent(Intent.ACTION_MAIN);
@@ -383,8 +342,8 @@ public class IctActivity extends AppCompatActivity implements
     private boolean mWaitingForGpsSignal;
     private double mSpeed;
 
-    private String mGpsPermissionNeededMessage;
-    private String mAcquiringGpsMessage;
+    //private String mGpsPermissionNeededMessage;
+    //private String mAcquiringGpsMessage;
 
     private TextView mCurrentSpeedMphTextView;
     private TextView mRelativePlaybackSpeedTextView;
@@ -678,89 +637,6 @@ public class IctActivity extends AppCompatActivity implements
 
         }
     }
-
-
-    public class ConnectTask extends AsyncTask<String, String, TcpClient> {
-
-        @Override
-        protected TcpClient doInBackground(String... message) {
-
-            String ip_address = message[0];
-            int ip_port = Integer.parseInt(message[1]);
-            //we create a TCPClient object and
-            mTcpClient = new TcpClient(ip_address,ip_port, new TcpClient.OnMessageReceived() {
-                @Override
-                //here the messageReceived method is implemented
-                public void messageReceived(String message) {
-                    //this method calls the onProgressUpdate
-                    publishProgress(message);
-                }
-            });
-            mTcpClient.run();
-
-            return null;
-        }
-
-        @Override
-        protected void onProgressUpdate(String... values) {
-            super.onProgressUpdate(values);
-
-            //in the arrayList we add the messages received from server
-            //arrayList.add(values[0]);
-
-            Log.d(TAG, "from tcp:" + values[0]);
-            ict.handleMessage(values[0]);
-            //parseSpeed(values[0]);
-
-            // notify the adapter that the data set has changed. This means that new message received
-            // from server was added to the list
-            mAdapter.notifyDataSetChanged();
-        }
-    }
-
-    int pollCarState = 0;
-    void pollCar() {
-
-        // messages
-        String[] messages = {"r 00000080\r",
-                "r 00000081\r",
-                "r 00000082\r",};
-
-        String message = messages[pollCarState];
-        pollCarState = (pollCarState+1) % messages.length; // round robin
-
-        //sends the message to the server
-        if (mTcpClient != null) {
-            mTcpClient.sendMessage(message);
-        }
-
-        //refresh the list
-        mAdapter.notifyDataSetChanged();
-    }
-
-    Thread timer = new Thread() {
-        public void run () {
-            for (;;) {
-                // do stuff in a separate thread
-                pollCar();
-                uiCallback.sendEmptyMessage(0);
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    };
-    void startPollingCar() {
-        timer.start();
-    }
-
-    private Handler uiCallback = new Handler () {
-        public void handleMessage (Message msg) {
-            // do stuff with UI
-        }
-    };
 
 
 }

@@ -1,5 +1,10 @@
 package com.phantompowerracing.ict;
 
+import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.Message;
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,19 +15,56 @@ public class Ict {
 
 
     private List<SpeedCallback> callbacks = new ArrayList<SpeedCallback>();
+    private TcpClient mTcpClient;
+    private String mIpAddress;
+    private int mPort;
+    public int corruptReadCount = 0;
+    public int totalReadCount = 0;
+    public int goodReadCount = 0;
+    public double readRate = 0;
+    private long tStart;
 
     public void register(SpeedCallback callback) {
         callbacks.add(callback);
     }
 
+    // constructor
+    public Ict(String ipAddress, int port) {
+        mIpAddress = ipAddress;
+        mPort = port;
+    }
+
     //# returns 32 bit int
     Integer parse(String rawStr) {
+        return parse(rawStr, null);
+    }
+    //# returns 32 bit int
+    Integer parse(String rawStr, Integer expectedAddress) {
         //#print "parse"
         //#expected format:
         //#addr:
         //00000010 = 0100001e
         String[] list = rawStr.split(" ");
         Integer data;
+        // validate address:
+        if(expectedAddress != null) {
+            Integer address;
+            try {
+                address = Integer.parseInt(list[1], 16); //#raw 32 bit value
+                //#print("raw: " + str(raw))
+                //#data = fi(raw, 1, 7, 0)#change to 11
+                //#print("data: " + str(data))
+            } catch (NumberFormatException e) {
+                address = null;
+            } catch (ArrayIndexOutOfBoundsException e) {
+                address = null;
+            }
+            if((address == null) || (address.intValue() != expectedAddress.intValue())) {
+                //corruptReadCount+=1;
+                return null;
+            }
+        }
+
         //#print(list)
         try {
             data = Integer.parseInt(list[3], 16); //#raw 32 bit value
@@ -38,6 +80,54 @@ public class Ict {
             data = null;
         }
         return data;
+    }
+
+    //# returns 32 bit int for address and data
+    Integer[] parseRead(String rawStr) {
+        //#print "parse"
+        //#expected format:
+        //#addr:
+        //00000010 = 0100001e
+        Integer data = null;
+        Integer address = null;
+
+        String[] list = rawStr.split(" ");
+        Integer[] ret = null;
+        if(list[0].equals("addr:")) {
+            // validate address:
+            try {
+                address = Integer.parseInt(list[1], 16); //#raw 32 bit value
+                //#print("raw: " + str(raw))
+                //#data = fi(raw, 1, 7, 0)#change to 11
+                //#print("data: " + str(data))
+            } catch (NumberFormatException e) {
+                address = null;
+            } catch (ArrayIndexOutOfBoundsException e) {
+                address = null;
+            }
+
+            //#print(list)
+            try {
+                data = Integer.parseInt(list[3], 16); //#raw 32 bit value
+                //#print("raw: " + str(raw))
+                //#data = fi(raw, 1, 7, 0)#change to 11
+                //#print("data: " + str(data))
+            } catch (NumberFormatException e) {
+                //print(e)
+                //throw e;
+                //ignore!
+                data = null;
+            } catch (ArrayIndexOutOfBoundsException e) {
+                data = null;
+            }
+            if ((address == null) ||
+                    (data == null)) {
+                corruptReadCount += 1;
+                return null;
+            }
+            ret = new Integer[]{address,data};
+        }
+        return ret;
     }
 
     //# returns list of 32 bit ints
@@ -60,15 +150,6 @@ public class Ict {
         return data;
     }
 
-    void handleMessage(String s) {
-        for(SpeedCallback callback : callbacks) {
-            Integer reg = parse(s);
-            if (reg != null) {
-                int speed = bitSliceGet(reg,15,0);
-                callback.setSpeed(speed);
-            }
-        }
-    }
 //    def _readline():
 //            # print('in readline')
 //    data = ""
@@ -224,4 +305,122 @@ public class Ict {
 //    # no prompt expecetd after this dump
 //
 //    return self.vals
+
+
+
+    public class ConnectTask extends AsyncTask<String, String, TcpClient> {
+
+        @Override
+        protected TcpClient doInBackground(String... message) {
+
+            //we create a TCPClient object and
+            mTcpClient = new TcpClient(mIpAddress,mPort, new TcpClient.OnMessageReceived() {
+                @Override
+                //here the messageReceived method is implemented
+                public void messageReceived(String message) {
+                    //this method calls the onProgressUpdate
+                    publishProgress(message);
+                }
+            });
+            mTcpClient.run();
+
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(String... values) {
+            super.onProgressUpdate(values);
+
+            //in the arrayList we add the messages received from server
+            //arrayList.add(values[0]);
+
+            Log.d("ICT", "from tcp:" + values[0]);
+            handleMessage(values[0]);
+            //parseSpeed(values[0]);
+
+            // notify the adapter that the data set has changed. This means that new message received
+            // from server was added to the list
+            //mAdapter.notifyDataSetChanged();
+        }
+    }
+
+    int pollCarState = 0;
+    int currentRegister = 0x80;
+    void pollCar() {
+
+        // messages
+        String[] messages = {"r 00000080\r",
+                "r 00000081\r",
+                "r 00000082\r",};
+
+        int[] registers = {0x80,0x81,0x82};
+
+        String message = messages[pollCarState];
+        currentRegister = registers[pollCarState];
+        pollCarState = (pollCarState+1) % messages.length; // round robin
+
+        //sends the message to the server
+        if (mTcpClient != null) {
+            if(currentRegister == 0x81) {
+                totalReadCount+=1;
+                long tEnd = System.nanoTime();
+                long tRes = tEnd - tStart; // time in nanoseconds
+                readRate = totalReadCount/(tRes*1e-9);
+            }
+            mTcpClient.sendMessage(message);
+        }
+
+        //refresh the list
+        //mAdapter.notifyDataSetChanged();
+    }
+
+    void handleMessage(String s) {
+        for(SpeedCallback callback : callbacks) {
+            //if(currentRegister == 0x81) { // this is speed
+                //Integer reg = parse(s,currentRegister);
+                Integer[] reg = parseRead(s);
+                if (reg != null) {
+                    if(reg[0] == 0x81) { // speed register
+                        goodReadCount+=1;
+                        int speed = bitSliceGet(reg[1], 15, 0);
+                        callback.setSpeed(speed);
+                    }
+                }
+            //}
+        }
+    }
+
+    Thread timer = new Thread() {
+        public void run () {
+            for (;;) {
+                // do stuff in a separate thread
+                pollCar();
+                uiCallback.sendEmptyMessage(0);
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    };
+    void startPollingCar() {
+        new ConnectTask().execute("");
+        tStart = System.nanoTime();
+        timer.start();
+    }
+
+    void disconnect() {
+        // disconnect
+        mTcpClient.stopClient();
+        mTcpClient = null;
+    }
+
+    private Handler uiCallback = new Handler () {
+        public void handleUiMessage (Message msg) {
+            // do stuff with UI
+        }
+    };
+
+
 }
