@@ -2,8 +2,10 @@ package com.phantompowerracing.ict;
 
 import android.util.Log;
 import java.io.*;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketException;
 
 /**
  * Description
@@ -96,7 +98,13 @@ public class TcpClient {
                 //in this while the client listens for the messages sent by the server
                 while (mRun) {
 
-                    mServerMessage = mBufferIn.readLine();
+                    try {
+                        mServerMessage = mBufferIn.readLine();
+                    } catch (SocketException e) {
+                        // ignore
+                        Log.e("TcpClient", "S: Handling Socket Closed in read");
+
+                    }
 
                     if (mServerMessage != null && mMessageListener != null) {
                         //call the method messageReceived from MyActivity class
@@ -117,6 +125,13 @@ public class TcpClient {
                 socket.close();
             }
 
+        } catch (ConnectException e) {
+            // EHOSTUNREACH host unreachable(ConnectException e) {
+            try {
+                Thread.sleep(1000); // try again in a bit
+            } catch (InterruptedException e1) {
+                e1.printStackTrace();
+            }
         } catch (Exception e) {
 
             Log.e("TCP", "C: Error", e);

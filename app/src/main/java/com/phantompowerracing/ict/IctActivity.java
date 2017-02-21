@@ -22,6 +22,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
@@ -137,6 +138,36 @@ public class IctActivity extends AppCompatActivity implements
                             Log.d("click", "play");
                             imgButton.setImageResource(R.drawable.mr_ic_pause_light);
                         }
+                    }
+                }
+            });
+        }
+
+
+        Button buttonUpload =(Button)findViewById(R.id.buttonUpload);
+        if (buttonUpload != null) {
+            buttonUpload.setOnClickListener(new View.OnClickListener() {
+                //        fab.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    //Button button =(Button)findViewById(R.id.buttonUpload);
+                    if(ict != null) {
+                        Log.d("upload","about to upload");
+                        ict.upload();
+                    }
+                }
+            });
+        }
+        Button buttonClearLogs =(Button)findViewById(R.id.buttonClearLogs);
+        if (buttonClearLogs != null) {
+            buttonClearLogs.setOnClickListener(new View.OnClickListener() {
+                //        fab.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    //Button button =(Button)findViewById(R.id.buttonUpload);
+                    if(ict != null) {
+                        Log.d("clear_logs","clearing logs");
+                        ict.clearLogs();
                     }
                 }
             });
@@ -263,6 +294,8 @@ public class IctActivity extends AppCompatActivity implements
         //http://stackoverflow.com/questions/17163505/how-to-add-new-item-to-setting-menu-at-android
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_about) {
+            //ict.upload();
+            //return true;
             Intent activity =new Intent(this, ShowSettingsActivity.class);
             activity.putExtra("EXTRA_CORRPUT_READ_COUNT", ict.corruptReadCount);
             activity.putExtra("EXTRA_GOOD_READ_COUNT", ict.goodReadCount);
@@ -273,7 +306,7 @@ public class IctActivity extends AppCompatActivity implements
         }
         if (id == R.id.action_exit) {
 
-            ict.disconnect();
+
 
             //http://stackoverflow.com/questions/17719634/how-to-exit-an-android-app-using-code
             Intent intent = new Intent(Intent.ACTION_MAIN);
@@ -317,6 +350,9 @@ public class IctActivity extends AppCompatActivity implements
         //mSpeedTextView = (TextView) findViewById(R.id.current_speed_text);
         mCurrentSpeedMphTextView = (TextView) findViewById(R.id.current_speed_mph);
         mRelativePlaybackSpeedTextView = (TextView) findViewById(R.id.relative_playback_speed);
+        mTextViewPwm = (TextView) findViewById(R.id.textViewPwm);
+        mTextViewCurrent = (TextView) findViewById(R.id.textViewCurrent);
+        mTextViewThrottle = (TextView) findViewById(R.id.textViewThrottle);
 
         //mGpsPermissionImageView = (ImageView) findViewById(R.id.gps_permission);
         //mGpsIssueTextView = (TextView) findViewById(R.id.gps_issue_text);
@@ -347,6 +383,9 @@ public class IctActivity extends AppCompatActivity implements
 
     private TextView mCurrentSpeedMphTextView;
     private TextView mRelativePlaybackSpeedTextView;
+    private TextView mTextViewPwm;
+    private TextView mTextViewCurrent;
+    private TextView mTextViewThrottle;
     private View mBlinkingGpsStatusDotView;
 
     private Handler mHandler = new Handler();
@@ -472,7 +511,18 @@ public class IctActivity extends AppCompatActivity implements
     private void updateSpeedInViews() {
 
         if (mGpsPermissionApproved) {
-            mCurrentSpeedMphTextView.setText(String.format(getString(R.string.speed_format), mSpeed));
+
+            String s = String.format("PWM: %.1f %%, %.1f %%", ict.pwm1, ict.pwm2);
+            mTextViewPwm.setText(s);
+
+            s = String.format("current: %.1f A, %.1f A", ict.i1, ict.i2);
+            mTextViewCurrent.setText(s);
+
+            s = String.format("throttle: %.1f A, %.1f A", ict.iThrottle1, ict.iThrottle2);
+            mTextViewThrottle.setText(s);
+
+            s = String.format("speed %.1f MPH, %.1f rpm\n good reads: %d, total reads: %d", mSpeed, ict.rpm1, ict.goodReadCount,ict.totalReadCount);
+            mCurrentSpeedMphTextView.setText(s);
             mRelativePlaybackSpeedTextView.setText(String.format(getString(R.string.playback_speed_format), m_relative_speed));
 
             //mSpeedLimitTextView.setText(getString(R.string.speed_limit, mSpeedLimit));
@@ -605,19 +655,26 @@ public class IctActivity extends AppCompatActivity implements
     @Override
     protected void onPause() {
         super.onPause();
+        Log.d(TAG, "onPause()");
         if ((mGoogleApiClient != null) && (mGoogleApiClient.isConnected()) &&
                 (mGoogleApiClient.isConnecting())) {
             LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
             mGoogleApiClient.disconnect();
         }
+        ict.disconnect();
 
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        Log.d(TAG, "onResume()");
         if (mGoogleApiClient != null) {
             mGoogleApiClient.connect();
+        }
+        // connect to the server
+        if (ict != null) {
+            ict.startPollingCar();
         }
     }
 
@@ -639,4 +696,15 @@ public class IctActivity extends AppCompatActivity implements
     }
 
 
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+    }
 }

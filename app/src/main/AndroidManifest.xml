@@ -1,44 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.phantompowerracing.ict">
+
     <!-- Used to start logging after re-boot -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
+        android:name="android.support.multidex.MultiDexApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme"
-        android:name="android.support.multidex.MultiDexApplication">
-
+        android:theme="@style/AppTheme">
         <activity
             android:name=".IctActivity"
+            android:configChanges="orientation|screenSize"
             android:label="@string/app_name"
-            android:theme="@style/AppTheme.NoActionBar"
-            android:configChanges="orientation|screenSize">
+            android:theme="@style/AppTheme.NoActionBar">
+            <intent-filter>
+
+                <!-- Change this to be db- followed by your app key -->
+                <!-- data android:scheme="db-716cd9ficzubbx7" / -->
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".PrefsActivity"
+            android:icon="@drawable/ict_prefs"
+            android:label="@string/action_settings">
+
+            <!-- http://stackoverflow.com/questions/8927315/two-launcher-activities -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".PrefsActivity" android:label="@string/app_name">
+        <activity android:name=".ShowSettingsActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".ShowSettingsActivity" />
-        <receiver android:name=".LocationLoggerServiceManager"
+
+        <receiver
+            android:name=".LocationLoggerServiceManager"
             android:enabled="true"
             android:exported="false"
             android:label="LocationLoggerServiceManager">
@@ -48,16 +63,18 @@
             </intent-filter>
         </receiver>
 
-        <service android:name=".BackgroundLocationService"
+        <service
+            android:name=".BackgroundLocationService"
             android:enabled="true"
-            android:exported="true" >
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <action
-                    android:name="com.google.android.gms.wearable.BIND_LISTENER" />
+                <action android:name="com.google.android.gms.wearable.BIND_LISTENER" />
             </intent-filter>
         </service>
-
+        <service
+            android:name=".UploadIntentService"
+            android:exported="false"></service>
     </application>
 
 </manifest>

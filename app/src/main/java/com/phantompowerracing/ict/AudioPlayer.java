@@ -142,7 +142,7 @@ public class AudioPlayer implements Runnable {
                 if(!isEOS){
                     ByteBuffer buffer = mc.getInputBuffer(inputBufferId);
                     while(isPaused) {
-                        Log.d("callback","paused");
+                        //Log.d("callback","paused");
                         try {
                             Thread.sleep(100);
                         } catch (InterruptedException e) {

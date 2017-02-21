@@ -7,6 +7,7 @@ import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Created by poleguy on 2/3/2017.
@@ -21,8 +22,25 @@ public class Ict {
     public int corruptReadCount = 0;
     public int totalReadCount = 0;
     public int goodReadCount = 0;
+    public double i1 = 0.0;
+    public double i2 = 0.0;
+    public double iThrottle1 = 0.0;
+    public double iThrottle2 = 0.0;
+    public double pwm1 = 0.0;
+    public double pwm2 = 0.0;
+    public double mph1 = 0.0;
+    public double mph2 = 0.0;
+    public double rpm1 = 0.0;
+    public double rpm2 = 0.0;
+
+
+
     public double readRate = 0;
     private long tStart;
+    public String logFilename = "sdcard/ict.txt";
+    public String rawLogFilename = "sdcard/ict_raw.txt";
+    IctLog ictLog = new IctLog(logFilename);
+    IctLog ictRawLog = new IctLog(rawLogFilename);
 
     public void register(SpeedCallback callback) {
         callbacks.add(callback);
@@ -54,9 +72,7 @@ public class Ict {
                 //#print("raw: " + str(raw))
                 //#data = fi(raw, 1, 7, 0)#change to 11
                 //#print("data: " + str(data))
-            } catch (NumberFormatException e) {
-                address = null;
-            } catch (ArrayIndexOutOfBoundsException e) {
+            } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
                 address = null;
             }
             if((address == null) || (address.intValue() != expectedAddress.intValue())) {
@@ -71,53 +87,57 @@ public class Ict {
             //#print("raw: " + str(raw))
             //#data = fi(raw, 1, 7, 0)#change to 11
             //#print("data: " + str(data))
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
             //print(e)
             //throw e;
             //ignore!
-            data = null;
-        } catch (ArrayIndexOutOfBoundsException e) {
             data = null;
         }
         return data;
     }
 
+    class RegisterValue {
+        long address;
+        long data;
+        RegisterValue(long a,long d) {
+            address = a;
+            data = d;
+        }
+    }
     //# returns 32 bit int for address and data
-    Integer[] parseRead(String rawStr) {
+    RegisterValue parseRead(String rawStr) {
         //#print "parse"
         //#expected format:
         //#addr:
         //00000010 = 0100001e
-        Integer data = null;
-        Integer address = null;
+        Long data = null;
+        Long address = null;
 
         String[] list = rawStr.split(" ");
-        Integer[] ret = null;
+        //Integer[] ret = null;
+
+        RegisterValue reg = null;
         if(list[0].equals("addr:")) {
             // validate address:
             try {
-                address = Integer.parseInt(list[1], 16); //#raw 32 bit value
+                address = Long.parseLong(list[1], 16); //#raw 32 bit value
                 //#print("raw: " + str(raw))
                 //#data = fi(raw, 1, 7, 0)#change to 11
                 //#print("data: " + str(data))
-            } catch (NumberFormatException e) {
-                address = null;
-            } catch (ArrayIndexOutOfBoundsException e) {
+            } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
                 address = null;
             }
 
             //#print(list)
             try {
-                data = Integer.parseInt(list[3], 16); //#raw 32 bit value
+                data = Long.parseLong(list[3], 16); //#raw 32 bit value
                 //#print("raw: " + str(raw))
                 //#data = fi(raw, 1, 7, 0)#change to 11
                 //#print("data: " + str(data))
-            } catch (NumberFormatException e) {
+            } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
                 //print(e)
                 //throw e;
                 //ignore!
-                data = null;
-            } catch (ArrayIndexOutOfBoundsException e) {
                 data = null;
             }
             if ((address == null) ||
@@ -125,27 +145,23 @@ public class Ict {
                 corruptReadCount += 1;
                 return null;
             }
-            ret = new Integer[]{address,data};
+            reg = new RegisterValue(address,data);
         }
-        return ret;
+        return reg;
     }
 
     //# returns list of 32 bit ints
-    List<Integer> parseList(String rawStr, int length) {
+    List<Integer> parseList(String rawStr, int length) throws NumberFormatException {
         //#print "parse"
         String[] list = rawStr.split("\n");
         //# print(list)
         List<Integer> data = new ArrayList<Integer>();
-        try {
-            //data = [];
-            for (int n = 0; n < length; n++) {
-                data.add(Integer.parseInt(list[n], 16)); //#raw 32 bit value
-                //#print("raw: " + str(raw))
-                //#data = fi(raw,1,7,0) # change to 11
-                //#print("data: " + str(data))
-            }
-        } catch (NumberFormatException e) {
-            throw e;
+        //data = [];
+        for (int n = 0; n < length; n++) {
+            data.add(Integer.parseInt(list[n], 16)); //#raw 32 bit value
+            //#print("raw: " + str(raw))
+            //#data = fi(raw,1,7,0) # change to 11
+            //#print("data: " + str(data))
         }
         return data;
     }
@@ -186,7 +202,7 @@ public class Ict {
 //            # accumulate
 //    data += karen
 //
-    double fi(int v,int s,int i,int f) { //: # value, signed, int bits, fractional bits
+    double fi(long v,int s,int i,int f) { //: # value, signed, int bits, fractional bits
         //    # takes a fixed point value and converts it to a double
         int bits = s + i + f;
         double s_adj = 0; // default
@@ -201,12 +217,12 @@ public class Ict {
     }
 
 
-    int bitSliceGet(int v,int lidx,int ridx) {
+    long bitSliceGet(long v,int lidx,int ridx) {
         // #print("idx: %d %d"%(lidx,ridx))
-        int mask = (1 << (lidx + 1 - ridx)) - 1;
+        long mask = (1 << (lidx + 1 - ridx)) - 1;
         // # print("mask: %08x"%mask)
-        int shifted = v >> ridx;
-        int slice = shifted & mask;
+        long shifted = v >> ridx;
+        long slice = shifted & mask;
         return slice;
     }
 
@@ -361,11 +377,8 @@ public class Ict {
 
         //sends the message to the server
         if (mTcpClient != null) {
-            if(currentRegister == 0x81) {
+            if(currentRegister == 0x82) {
                 totalReadCount+=1;
-                long tEnd = System.nanoTime();
-                long tRes = tEnd - tStart; // time in nanoseconds
-                readRate = totalReadCount/(tRes*1e-9);
             }
             mTcpClient.sendMessage(message);
         }
@@ -375,45 +388,88 @@ public class Ict {
     }
 
     void handleMessage(String s) {
-        for(SpeedCallback callback : callbacks) {
-            //if(currentRegister == 0x81) { // this is speed
-                //Integer reg = parse(s,currentRegister);
-                Integer[] reg = parseRead(s);
-                if (reg != null) {
-                    if(reg[0] == 0x81) { // speed register
-                        goodReadCount+=1;
-                        int speed = bitSliceGet(reg[1], 15, 0);
+        ictRawLog.append(s); // save everything in a raw log
+
+        for (String line : s.split("\n")) {
+            RegisterValue reg = parseRead(line);
+            if (reg != null) {
+                if (reg.address == 0x80) { // motor 1 register
+                    pwm1 = fi(bitSliceGet(reg.data, 31, 24), 0, 8, 0)/255.0 * 100.0; // percent
+                    iThrottle1 = fi(bitSliceGet(reg.data, 23, 12), 1, 11, 0) / 2048.0 * 250.0; // amps
+                    i1 = fi(bitSliceGet(reg.data, 11, 0), 1, 11, 0) / 2048.0 * 250.0; // amps
+                }
+                if (reg.address == 0x81) { // motor 2 register
+                    pwm2 = fi(bitSliceGet(reg.data, 31, 24), 0, 8, 0)/255.0 * 100.0; // percent
+                    iThrottle2 = fi(bitSliceGet(reg.data, 23, 12), 1, 11, 0) / 2048.0 * 250.0; // amps
+                    i2 = fi(bitSliceGet(reg.data, 11, 0), 1, 11, 0) / 2048.0 * 250.0; // amps
+                }
+                if (reg.address == 0x82) { // speed register
+                    goodReadCount += 1;
+                    // 1/1008 = 1/500*60 sec/min/3.6(pulley ratio)*10*pi/rev/1056 MPH/(in/min)
+                    double speed = (double) bitSliceGet(reg.data, 31, 16) / 1008.0;
+                    mph1 = speed;
+                    rpm1 = fi(bitSliceGet(reg.data, 31, 16), 1, 15, 0) / 500 * 60; // rpm
+                    for (SpeedCallback callback : callbacks) {
                         callback.setSpeed(speed);
                     }
+                    long tEnd = System.nanoTime();
+                    long tRes = tEnd - tStart; // time in nanoseconds
+                    readRate = goodReadCount / (tRes * 1e-9);
                 }
-            //}
+                // log everything to analyze later
+                ictLog.append(String.format(Locale.US, "%s, reg, %08x, %08x, %.1f, %.1f, %.1f", IctLog.timestamp(),
+                        reg.address, reg.data, rpm1, pwm1, i1));
+            }
         }
     }
 
-    Thread timer = new Thread() {
-        public void run () {
-            for (;;) {
+    // http://stackoverflow.com/questions/541487/implements-runnable-vs-extends-thread?rq=1
+    public class IctRunnable implements Runnable {
+        public void run() {
+            //todo: add way to stop thread cleanly
+            while (mTcpClient != null) {
                 // do stuff in a separate thread
                 pollCar();
-                uiCallback.sendEmptyMessage(0);
+                //uiCallback.sendEmptyMessage(0);
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+
             }
         }
-    };
+    }
+
+
+
     void startPollingCar() {
         new ConnectTask().execute("");
         tStart = System.nanoTime();
-        timer.start();
+
+        Thread poller = new Thread(new IctRunnable());
+        poller.start();
     }
 
     void disconnect() {
+        Log.e("ICT", String.format("disconnecting... "));
+
         // disconnect
-        mTcpClient.stopClient();
-        mTcpClient = null;
+        if(mTcpClient != null) {
+            Log.e("ICT", String.format("stopping client... "));
+            mTcpClient.stopClient();
+            Log.e("ICT", String.format("nulling client... "));
+            mTcpClient = null;
+        }
+        //upload();
+    }
+
+    void upload() {
+        Log.d("Ict.upload","about to upload");
+        final String[] filenames = {logFilename, rawLogFilename};
+        Log.d("Ict.upload",filenames[0]);
+        Log.d("Ict.upload",filenames[1]);
+        ictLog.upload(filenames);
     }
 
     private Handler uiCallback = new Handler () {
@@ -422,5 +478,10 @@ public class Ict {
         }
     };
 
+    void clearLogs() {
+        Log.d("Ict.clearLogs","clearing logs");
+        ictLog.clear();
+        ictRawLog.clear();
+    }
 
 }
