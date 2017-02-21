@@ -1,5 +1,7 @@
 package com.phantompowerracing.ict;
 
+import android.app.IntentService;
+import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.util.Log;
@@ -12,6 +14,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import static com.phantompowerracing.ict.UploadIntentService.startActionUpload;
 
 /**
  * Created by poleguy on 2/6/2017.
@@ -78,52 +82,56 @@ public class IctLog {
         }
     }
 
-    public void upload(String[] filenames) {
+    public void upload(Context context, String[] filenames) {
         // upload the log to dropbox
         //DropboxUpload db = new DropboxUpload();
         //db.execute("");
 
-        class UploadAsyncTask extends AsyncTask<String, Void, String> {
-
-            @Override
-            protected void onPreExecute() {
-                super.onPreExecute();
-                Log.d("IctLog.upload","onPreExecute");
-            }
-
-            @Override
-            protected String doInBackground(String... filenames) {
-                // do above Server call here
-                try {
-                    Log.d("IctLog.upload","about to upload");
-                    GMailSender sender = new GMailSender("nick.dietz@gmail.com", "irrin.vallo");
-                    Log.d("IctLog.upload","got sender");
-                    sender.sendMail("ICT Log",
-                            "ICT Log",
-                            "nick.dietz@gmail.com",
-                            "nick.dietz@gmail.com",
-                            filenames
-                            );
-                    Log.d("IctLog.upload","sendMail complete");
-                } catch (Exception e) {
-                    Log.e("SendMail", e.getMessage(), e);
-                }
-
-                return "mail sent";
-            }
-
-            @Override
-            protected void onPostExecute(String message) {
-                //nothing to do
-                Log.d("IctLog.onPostExecute", message);
-            }
-        }
-        Log.d("IctLog.upload","creating task");
-        UploadAsyncTask job = new UploadAsyncTask();
-        Log.d("IctLog.upload","executing task");
-        job.execute(filenames[0],filenames[1]);
-        //job.execute();
-        Log.d("IctLog.upload","task complete");
+//        class UploadAsyncTask extends AsyncTask<String, Void, String> {
+//
+//            @Override
+//            protected void onPreExecute() {
+//                super.onPreExecute();
+//                Log.d("IctLog.upload","onPreExecute");
+//            }
+//
+//            @Override
+//            protected String doInBackground(String... filenames) {
+//                // do above Server call here
+//                try {
+//                    Log.d("IctLog.upload","about to upload");
+//                    GMailSender sender = new GMailSender("nick.dietz@gmail.com", "irrin.vallo");
+//                    Log.d("IctLog.upload","got sender");
+//                    sender.sendMail("ICT Log",
+//                            "ICT Log",
+//                            "nick.dietz@gmail.com",
+//                            "nick.dietz@gmail.com",
+//                            filenames
+//                            );
+//                    Log.d("IctLog.upload","sendMail complete");
+//                } catch (Exception e) {
+//                    Log.e("SendMail", e.getMessage(), e);
+//                }
+//
+//                return "mail sent";
+//            }
+//
+//            @Override
+//            protected void onPostExecute(String message) {
+//                //nothing to do
+//                Log.d("IctLog.onPostExecute", message);
+//            }
+//        }
+//        Log.d("IctLog.upload","creating task");
+//        UploadAsyncTask job = new UploadAsyncTask();
+//        Log.d("IctLog.upload","executing task");
+//        job.execute(filenames[0],filenames[1]);
+//        //job.execute();
+//        Log.d("IctLog.upload","task complete");
+        //Intent  uploadIntent = new Intent(this, UploadIntentService.class);
+        //IntentService uploadIntentService = new UploadIntentService();
+        //uploadIntentService.
+        startActionUpload(context, filenames);
 
     }
 

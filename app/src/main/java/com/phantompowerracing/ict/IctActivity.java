@@ -145,6 +145,7 @@ public class IctActivity extends AppCompatActivity implements
 
 
         Button buttonUpload =(Button)findViewById(R.id.buttonUpload);
+        final Context context = this;
         if (buttonUpload != null) {
             buttonUpload.setOnClickListener(new View.OnClickListener() {
                 //        fab.setOnClickListener(new View.OnClickListener() {
@@ -153,7 +154,7 @@ public class IctActivity extends AppCompatActivity implements
                     //Button button =(Button)findViewById(R.id.buttonUpload);
                     if(ict != null) {
                         Log.d("upload","about to upload");
-                        ict.upload();
+                        ict.upload(context);
                     }
                 }
             });

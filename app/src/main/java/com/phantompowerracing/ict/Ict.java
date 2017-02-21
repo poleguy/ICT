@@ -1,5 +1,6 @@
 package com.phantompowerracing.ict;
 
+import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Message;
@@ -464,12 +465,12 @@ public class Ict {
         //upload();
     }
 
-    void upload() {
+    void upload(Context context) {
         Log.d("Ict.upload","about to upload");
         final String[] filenames = {logFilename, rawLogFilename};
         Log.d("Ict.upload",filenames[0]);
         Log.d("Ict.upload",filenames[1]);
-        ictLog.upload(filenames);
+        ictLog.upload(context, filenames);
     }
 
     private Handler uiCallback = new Handler () {
