@@ -9,6 +9,13 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
+import android.net.wifi.WifiConfiguration;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.PowerManager;
@@ -86,12 +93,75 @@ public class IctActivity extends AppCompatActivity implements
         mPowerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
 
         turnOffScreen();
+        // http://stackoverflow.com/questions/26982778/android-5-0-lollipop-and-4-4-kitkat-ignores-my-wifi-network-enablenetwork-is?rq=1
+
+        //http://stackoverflow.com/questions/8818290/how-do-i-connect-to-a-specific-wi-fi-network-in-android-programmatically
+        WifiConfiguration wifiConfig = new WifiConfiguration();
+        wifiConfig.SSID = String.format("\"%s\"", "ESP_DCE4AC");
+        //wifiConfig.SSID = String.format("\"%s\"", "244Wesley_708-848-3835");
+        //wifiConfig.preSharedKey = String.format("\"%s\"", "dietz network key");
+
+        WifiManager wifiManager = (WifiManager)getSystemService(WIFI_SERVICE);
+//remember id
+        int netId = wifiManager.addNetwork(wifiConfig);
+        wifiManager.setWifiEnabled(true);
+        wifiManager.disconnect();
+        wifiManager.enableNetwork(netId, true);
+        wifiManager.reconnect();
+
+        // set up car network
+        //WifiManager wm = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+
+        final ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkRequest.Builder request = new NetworkRequest.Builder();
+        request.addTransportType(NetworkCapabilities.TRANSPORT_WIFI);
+                //.setNetworkSpecifier("00:1a:70:ee:69:b6"); // 244Wesley
+                //.setNetworkSpecifier("001a70ee69b6"); // 244Wesley
+                //.setNetworkSpecifier("244Wesley_708-848-3835"); // 244Wesley
+                //.setNetworkSpecifier("1a:fe:34:dc:e4:ac"); // ESP_DCE4AC
+        final NetworkRequest nr = request.build();
+        //cm.registerNetworkCallback(nr, new ConnectivityManager.NetworkCallback() {
+        cm.requestNetwork(nr, new ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onAvailable(Network network) {
+
+
+                WifiManager wifiManager = (WifiManager) getSystemService (Context.WIFI_SERVICE);
+                WifiInfo info = wifiManager.getConnectionInfo ();
+                String ssid  = info.getSSID();
+                Log.d("IctNetwork","onAvailable" + ssid);
+                if (ssid == "ESP_DCE4AC") {
+                    ConnectivityManager.setProcessDefaultNetwork(network);
+                    //ConnectivityManager.NetworkCallback networkCallback = new ConnectivityManager.NetworkCallback();
+                    //cm.requestNetwork(nr, networkCallback );
+                }
+            }
+            @Override
+            public void onLosing(Network network, int ms) {
+                Log.d("IctNetwork","onLosing");
+            }
+            @Override
+            public void onLost(Network network) {
+                Log.d("IctNetwork","onLost");
+            }
+        });
+        //        cm.requestNetwork(new NetworkRequest.Builder()
+//                        .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+//                        .setNetworkSpecifier("00:1a:70:ee:69:b6") // 244Wesley
+//                        //.setNetworkSpecifier("1a:fe:34:dc:e4:ac") // ESP_DCE4AC
+//                        .build(),
+//                new ConnectivityManager.NetworkCallback() {
+//                    public void onAvailable(Network network) {
+//                        Log.d("IctNetwork","onAvailable");
+//                    }
+//                });
+
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         String ip_address = sharedPreferences.getString("car_ip_address", "192.168.1.74");
         int ip_port = Integer.parseInt(sharedPreferences.getString("car_ip_port", "23"));
 
-        ict = new Ict(ip_address, ip_port);
+        ict = new Ict(this, ip_address, ip_port);
         ict.register(this); // register callback
 
         // connect to the server
@@ -145,7 +215,7 @@ public class IctActivity extends AppCompatActivity implements
 
 
         Button buttonUpload =(Button)findViewById(R.id.buttonUpload);
-        final Context context = this;
+        //final Context context = this;
         if (buttonUpload != null) {
             buttonUpload.setOnClickListener(new View.OnClickListener() {
                 //        fab.setOnClickListener(new View.OnClickListener() {
@@ -154,7 +224,7 @@ public class IctActivity extends AppCompatActivity implements
                     //Button button =(Button)findViewById(R.id.buttonUpload);
                     if(ict != null) {
                         Log.d("upload","about to upload");
-                        ict.upload(context);
+                        ict.upload();
                     }
                 }
             });
@@ -470,7 +540,7 @@ public class IctActivity extends AppCompatActivity implements
     Random r = new Random();
     @Override
     public void onLocationChanged(Location location) {
-        Log.d(TAG, "onLocationChanged() : " + location);
+        //Log.d(TAG, "onLocationChanged() : " + location);
         //Log.d("onLocation","thread: " + android.os.Process.myTid());
 
         if (mWaitingForGpsSignal) {
@@ -544,7 +614,7 @@ public class IctActivity extends AppCompatActivity implements
                 @Override
                 public void run() {
                     mBlinkingGpsStatusDotView.setVisibility(View.VISIBLE);
-                    Log.d("green_dot","got gps update");
+                    //Log.d("green_dot","got gps update");
                 }
             });
             mBlinkingGpsStatusDotView.setVisibility(View.VISIBLE);

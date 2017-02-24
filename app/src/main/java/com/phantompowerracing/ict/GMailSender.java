@@ -21,6 +21,7 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -104,15 +105,18 @@ public class GMailSender extends javax.mail.Authenticator {
 
             //String filename = "/home/manisha/file.txt";
             for (String filename : filenames) {
-                // Part two, etc. are attachments
-                messageBodyPart = new MimeBodyPart();
-                DataSource source = new FileDataSource(filename);
-                messageBodyPart.setDataHandler(new DataHandler(source));
-                messageBodyPart.setFileName(filename);
-                multipart.addBodyPart(messageBodyPart);
+                File file = new File(filename);
+                if (file.exists()) {
+                    // Part two, etc. are attachments
+                    messageBodyPart = new MimeBodyPart();
+                    DataSource source = new FileDataSource(filename);
+                    messageBodyPart.setDataHandler(new DataHandler(source));
+                    messageBodyPart.setFileName(filename);
+                    multipart.addBodyPart(messageBodyPart);
+                }
             }
 
-            // Send the complete message parts
+            // Send the complete message parts$200,000
             message.setContent(multipart);
             Log.d("GMailSender.sendMail","about to send");
             // Send message

@@ -23,9 +23,12 @@ import static com.phantompowerracing.ict.UploadIntentService.startActionUpload;
  */
 public class IctLog {
     String filename;
+
     IctLog(String newFilename) {
+
         filename = newFilename;
     }
+
     public void append(String text)
     {
         File logFile = new File(filename);
@@ -82,7 +85,7 @@ public class IctLog {
         }
     }
 
-    public void upload(Context context, String[] filenames) {
+//    public void upload(String[] filenames) {
         // upload the log to dropbox
         //DropboxUpload db = new DropboxUpload();
         //db.execute("");
@@ -131,9 +134,9 @@ public class IctLog {
         //Intent  uploadIntent = new Intent(this, UploadIntentService.class);
         //IntentService uploadIntentService = new UploadIntentService();
         //uploadIntentService.
-        startActionUpload(context, filenames);
 
-    }
+
+//    }
 
 
 }

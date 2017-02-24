@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import static com.phantompowerracing.ict.UploadIntentService.startActionUpload;
+
 /**
  * Created by poleguy on 2/3/2017.
  */
@@ -42,13 +44,15 @@ public class Ict {
     public String rawLogFilename = "sdcard/ict_raw.txt";
     IctLog ictLog = new IctLog(logFilename);
     IctLog ictRawLog = new IctLog(rawLogFilename);
+    Context context;
 
     public void register(SpeedCallback callback) {
         callbacks.add(callback);
     }
 
     // constructor
-    public Ict(String ipAddress, int port) {
+    public Ict(Context newContext, String ipAddress, int port) {
+        context = newContext;
         mIpAddress = ipAddress;
         mPort = port;
     }
@@ -465,12 +469,13 @@ public class Ict {
         //upload();
     }
 
-    void upload(Context context) {
+    void upload() {
         Log.d("Ict.upload","about to upload");
         final String[] filenames = {logFilename, rawLogFilename};
         Log.d("Ict.upload",filenames[0]);
         Log.d("Ict.upload",filenames[1]);
-        ictLog.upload(context, filenames);
+        //ictLog.upload(filenames);
+        startActionUpload(context, filenames);
     }
 
     private Handler uiCallback = new Handler () {
