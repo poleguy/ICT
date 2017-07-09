@@ -12,11 +12,88 @@
     tools:context="com.phantompowerracing.ict.IctActivity"
     tools:showIn="@layout/activity_ict">
 
+
+    <TextView
+        android:id="@+id/textViewThrottle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Throttle"
+        android:layout_alignParentTop="true"
+        android:layout_toEndOf="@+id/buttonClearLogs" />
+
+    <TextView
+        android:id="@+id/textViewCurrent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Motor Current"
+        android:layout_alignParentTop="true"
+        android:layout_toEndOf="@+id/textViewThrottle"
+        android:layout_marginStart="13dp" />
+
+    <TextView
+        android:id="@+id/textViewPwm"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="PWM"
+        android:layout_alignParentTop="true"
+        android:layout_toEndOf="@+id/textViewCurrent"
+        android:layout_marginStart="33dp" />
+
+    <ImageButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/imageButton"
+        android:src="@drawable/mr_ic_play_light"
+        android:layout_above="@+id/buttonClearLogs"
+        android:layout_alignParentEnd="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/buttonClearLogs"
+        android:text="Clear Logs"
+        android:layout_below="@+id/current_speed_mph"
+        android:layout_alignParentEnd="true" />
+
+    <Button
+        android:text="Upload"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/buttonUpload"
+        android:layout_alignBaseline="@+id/buttonClearLogs"
+        android:layout_alignBottom="@+id/buttonClearLogs"
+        android:layout_toStartOf="@+id/buttonClearLogs" />
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello World!"
-        android:id="@+id/textView2" />
+        android:text="Speed"
+        android:textAppearance="@android:style/TextAppearance.Material.Small"
+        android:id="@+id/current_speed_mph"
+        android:layout_below="@+id/relative_playback_speed"
+        android:layout_alignParentStart="true"
+        android:textSize="30sp" />
+
+    <TextView
+        android:id="@+id/settings_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="..."
+        android:layout_alignBaseline="@+id/buttonUpload"
+        android:layout_alignBottom="@+id/buttonUpload"
+        android:layout_toStartOf="@+id/buttonUpload"
+        android:layout_marginEnd="43dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Playback"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textSize="30sp"
+        android:fontFamily="sans-serif-light"
+        android:id="@+id/relative_playback_speed"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true" />
 
     <ImageView
         android:id="@+id/dot"
@@ -25,85 +102,7 @@
 
         android:visibility="invisible"
         android:src="@drawable/dot"
-        android:layout_below="@+id/textView2"
-        android:layout_alignParentStart="true" />
-
-    <TextView
-        android:id="@+id/settings_text_view"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="..."
-        android:layout_below="@+id/dot"
-        android:layout_alignParentStart="true" />
-
-    <TextView
-        android:id="@+id/textViewPwm"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="PWM"
-        android:layout_below="@+id/settings_text_view"
-        android:layout_alignParentStart="true" />
-
-    <TextView
-        android:id="@+id/textViewCurrent"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Motor Current"
-        android:layout_below="@+id/textViewPwm"
-        android:layout_alignParentStart="true" />
-
-    <TextView
-        android:id="@+id/textViewThrottle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Throttle"
-        android:layout_below="@+id/textViewCurrent"
-        android:layout_alignParentStart="true" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Speed"
-        android:textAppearance="@android:style/TextAppearance.Material.Small"
-        android:id="@+id/current_speed_mph"
-        android:layout_centerVertical="true" />
-
-
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Playback"
-        android:textAppearance="?android:attr/textAppearanceLarge"
-        android:textSize="50sp"
-        android:fontFamily="sans-serif-light"
-        android:id="@+id/relative_playback_speed"
-        android:layout_below="@+id/current_speed_mph"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentEnd="true" />
-
-    <ImageButton
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/imageButton"
-        android:layout_below="@+id/relative_playback_speed"
-        android:layout_alignParentStart="true"
-        android:src="@drawable/mr_ic_play_light" />
-
-    <Button
-        android:text="Upload"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/buttonUpload"
-        android:layout_below="@+id/imageButton"
-        android:layout_alignParentStart="true" />
-
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/buttonClearLogs"
-        android:text="Clear Logs"
-        android:layout_below="@+id/buttonUpload"
-        android:layout_alignParentStart="true" />
+        android:layout_alignBottom="@+id/buttonUpload"
+        android:layout_toEndOf="@+id/current_speed_mph" />
 
 </RelativeLayout>

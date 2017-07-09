@@ -6,12 +6,14 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
+import android.net.NetworkInfo;
 import android.net.NetworkRequest;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
@@ -42,6 +44,9 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.util.Random;
 
 //import java.util.ArrayList;
@@ -76,6 +81,8 @@ public class IctActivity extends AppCompatActivity implements
     //private ClientListAdapter mAdapter;
 
     private Ict ict;
+    // The BroadcastReceiver that tracks network connectivity changes.
+    //private NetworkReceiver receiver = new NetworkReceiver();
 
 
     @Override
@@ -93,28 +100,41 @@ public class IctActivity extends AppCompatActivity implements
         mPowerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
 
         turnOffScreen();
+
+        //http://stackoverflow.com/questions/32419605/how-to-use-data-connection-instead-of-wifi-when-both-are-enabled
+        // https://developer.android.com/training/basics/network-ops/managing.html#detect-changes
+
+        // Registers BroadcastReceiver to track network connection changes.
+        //IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
+        //receiver = new NetworkReceiver();
+        //this.registerReceiver(receiver, filter);
+
+
         // http://stackoverflow.com/questions/26982778/android-5-0-lollipop-and-4-4-kitkat-ignores-my-wifi-network-enablenetwork-is?rq=1
 
         //http://stackoverflow.com/questions/8818290/how-do-i-connect-to-a-specific-wi-fi-network-in-android-programmatically
         WifiConfiguration wifiConfig = new WifiConfiguration();
-        wifiConfig.SSID = String.format("\"%s\"", "ESP_DCE4AC");
+        //wifiConfig.SSID = String.format("\"%s\"", "ESP_DCE4AC");
         //wifiConfig.SSID = String.format("\"%s\"", "244Wesley_708-848-3835");
         //wifiConfig.preSharedKey = String.format("\"%s\"", "dietz network key");
 
         WifiManager wifiManager = (WifiManager)getSystemService(WIFI_SERVICE);
 //remember id
-        int netId = wifiManager.addNetwork(wifiConfig);
-        wifiManager.setWifiEnabled(true);
-        wifiManager.disconnect();
-        wifiManager.enableNetwork(netId, true);
-        wifiManager.reconnect();
+        //int netId = wifiManager.addNetwork(wifiConfig);
+        //wifiManager.setWifiEnabled(true);
+        //wifiManager.disconnect();
+        //wifiManager.enableNetwork(netId, true);
+        //wifiManager.reconnect();
 
         // set up car network
         //WifiManager wm = (WifiManager) getSystemService(Context.WIFI_SERVICE);
 
         final ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkRequest.Builder request = new NetworkRequest.Builder();
-        request.addTransportType(NetworkCapabilities.TRANSPORT_WIFI);
+        //request.addTransportType(NetworkCapabilities.NET_CAPABILITY_MMS);
+        request.addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+        request.addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR);
+        //request.addTransportType(NetworkCapabilities.TRANSPORT_WIFI);
                 //.setNetworkSpecifier("00:1a:70:ee:69:b6"); // 244Wesley
                 //.setNetworkSpecifier("001a70ee69b6"); // 244Wesley
                 //.setNetworkSpecifier("244Wesley_708-848-3835"); // 244Wesley
@@ -126,15 +146,28 @@ public class IctActivity extends AppCompatActivity implements
             public void onAvailable(Network network) {
 
 
-                WifiManager wifiManager = (WifiManager) getSystemService (Context.WIFI_SERVICE);
-                WifiInfo info = wifiManager.getConnectionInfo ();
-                String ssid  = info.getSSID();
-                Log.d("IctNetwork","onAvailable" + ssid);
-                if (ssid == "ESP_DCE4AC") {
-                    ConnectivityManager.setProcessDefaultNetwork(network);
+                //WifiManager wifiManager = (WifiManager) getSystemService (Context.WIFI_SERVICE);
+                //WifiInfo info = wifiManager.getConnectionInfo ();
+                //String ssid  = info.getSSID();
+                //Log.d("IctNetwork","onAvailable" + ssid);
+                Log.d("IctNetwork","onAvailable");
+                //if (ssid == "ESP_DCE4AC") {
+                //    ConnectivityManager.setProcessDefaultNetwork(network);
                     //ConnectivityManager.NetworkCallback networkCallback = new ConnectivityManager.NetworkCallback();
                     //cm.requestNetwork(nr, networkCallback );
-                }
+                //}
+                ConnectivityManager.setProcessDefaultNetwork(network);
+                //http://stackoverflow.com/questions/2513713/how-to-use-3g-connection-in-android-application-instead-of-wi-fi/4756630#4756630
+                //InetAddress ip = null;
+                //try {
+                //    ip = InetAddress.getByName("192.168.4.1");
+                //} catch (UnknownHostException e) {
+                //    e.printStackTrace();
+                //}
+                //int address = ByteBuffer.wrap(ip.getAddress()).getInt();
+                //cm.requestRouteToHost(ConnectivityManager.TYPE_WIFI, address);
+                //cm.bindProcessToNetwork(network);
+                //ConnectivityManager.bindProcessToNetwork();
             }
             @Override
             public void onLosing(Network network, int ms) {
@@ -158,11 +191,71 @@ public class IctActivity extends AppCompatActivity implements
 
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        String ip_address = sharedPreferences.getString("car_ip_address", "192.168.1.74");
+        String ip_address = sharedPreferences.getString("car_ip_address", "192.168.2.74");
         int ip_port = Integer.parseInt(sharedPreferences.getString("car_ip_port", "23"));
 
         ict = new Ict(this, ip_address, ip_port);
         ict.register(this); // register callback
+
+
+        // before connecting to car, let's set up a route
+        //http://stackoverflow.com/questions/2513713/how-to-use-3g-connection-in-android-application-instead-of-wi-fi/4756630#4756630
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (null == connectivityManager) {
+            Log.d("ICT", "ConnectivityManager is null, cannot try to force a mobile connection");
+        }
+
+        //check if mobile connection is available and connected
+        NetworkInfo.State state = connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI).getState();
+        Log.d("ICT", "TYPE_MOBILE_HIPRI network state: " + state);
+        if (0 == state.compareTo(NetworkInfo.State.CONNECTED) || 0 == state.compareTo(NetworkInfo.State.CONNECTING)) {
+        }
+
+        //activate mobile connection in addition to other connection already activated
+        //int resultInt = connectivityManager.startUsingNetworkFeature(ConnectivityManager.TYPE_WIFI, "enableHIPRI");
+        //Log.d("ICT", "startUsingNetworkFeature for enableHIPRI result: " + resultInt);
+
+        //-1 means errors
+        // 0 means already enabled
+        // 1 means enabled
+        // other values can be returned, because this method is vendor specific
+        //if (-1 == resultInt) {
+        //    Log.e("ICT", "Wrong result of startUsingNetworkFeature, maybe problems");
+       // }
+        //if (0 == resultInt) {
+        //    Log.e("ICT", "No need to perform additional network settings");
+       // }
+
+        //create a route for the specified address
+        int hostAddress = lookupHost(ip_address);
+        if (-1 == hostAddress) {
+            Log.e("ICT", "Wrong host address transformation, result was -1");
+        }
+        //wait some time needed to connection manager for waking up
+        try {
+            for (int counter=0; counter<30; counter++) {
+                NetworkInfo.State checkState = connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI).getState();
+                if (0 == checkState.compareTo(NetworkInfo.State.CONNECTED))
+                    break;
+                Thread.sleep(1000);
+            }
+        } catch (InterruptedException e) {
+            //nothing to do
+        }
+        boolean resultBool = connectivityManager.requestRouteToHost(ConnectivityManager.TYPE_WIFI, hostAddress);
+        Log.d("ICT", "requestRouteToHost result: " + resultBool);
+        if (!resultBool)
+            Log.e("ICT", "Wrong requestRouteToHost result: expected true, but was false");
+
+        //try {
+        //    ip = InetAddress.getByName("192.168.4.1");
+        //} catch (UnknownHostException e) {
+        //    e.printStackTrace();
+        //}
+        //int address = ByteBuffer.wrap(ip.getAddress()).getInt();
+        //cm.requestRouteToHost(ConnectivityManager.TYPE_WIFI, address);
+        //cm.bindProcessToNetwork(network);
+        //ConnectivityManager.bindProcessToNetwork();
 
         // connect to the server
         ict.startPollingCar();
@@ -268,6 +361,7 @@ public class IctActivity extends AppCompatActivity implements
         //mSpeedLimit = sharedPreferences.getInt(PREFS_SPEED_LIMIT_KEY, SPEED_LIMIT_DEFAULT_MPH);
 
         mSpeed = 0;
+        mGpsSpeed = 0;
 
         mWaitingForGpsSignal = true;
 
@@ -447,6 +541,7 @@ public class IctActivity extends AppCompatActivity implements
 
     private GoogleApiClient mGoogleApiClient;
     private boolean mWaitingForGpsSignal;
+    private double mGpsSpeed;
     private double mSpeed;
 
     //private String mGpsPermissionNeededMessage;
@@ -526,7 +621,8 @@ public class IctActivity extends AppCompatActivity implements
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         //http://stackoverflow.com/questions/17844511/android-preferences-error-string-cannot-be-cast-to-int
         int normalSpeed = Integer.parseInt(sharedPreferences.getString("normal_speed", "20"));
-        double minRate = 0.3;
+        double minRate = Double.parseDouble(sharedPreferences.getString("min_rate", "0.9"));
+        //double minRate = 0.9;
         double slope = (1.0-minRate);
 
         m_relative_speed =  minRate+slope*mSpeed/(normalSpeed);
@@ -559,13 +655,17 @@ public class IctActivity extends AppCompatActivity implements
             int minSpeed = 0; // MPH
             int maxSpeed = normalSpeed; // MPH
             mSpeed = r.nextInt(maxSpeed - minSpeed) + minSpeed;
+            mGpsSpeed = location.getSpeed() * MPH_IN_METERS_PER_SECOND;
         } else if(useFast) {
             mSpeed = normalSpeed * 1.5 * MPH_IN_METERS_PER_SECOND;
+            mGpsSpeed = location.getSpeed() * MPH_IN_METERS_PER_SECOND;
         } else if(useCar) {
             //
+            mGpsSpeed = location.getSpeed() * MPH_IN_METERS_PER_SECOND;
         } else
         {
             mSpeed = location.getSpeed() * MPH_IN_METERS_PER_SECOND;
+            mGpsSpeed = mSpeed;
 
         }
         setPlaybackSpeed();
@@ -592,7 +692,7 @@ public class IctActivity extends AppCompatActivity implements
             s = String.format("throttle: %.1f A, %.1f A", ict.iThrottle1, ict.iThrottle2);
             mTextViewThrottle.setText(s);
 
-            s = String.format("speed %.1f MPH, %.1f rpm\n good reads: %d, total reads: %d", mSpeed, ict.rpm1, ict.goodReadCount,ict.totalReadCount);
+            s = String.format("speed %.1f MPH, %.1f rpm\nGPS speed %.1f MPH\n good reads: %d, total reads: %d", mSpeed, mGpsSpeed, ict.rpm1, ict.goodReadCount,ict.totalReadCount);
             mCurrentSpeedMphTextView.setText(s);
             mRelativePlaybackSpeedTextView.setText(String.format(getString(R.string.playback_speed_format), m_relative_speed));
 
@@ -776,6 +876,34 @@ public class IctActivity extends AppCompatActivity implements
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        // Unregisters BroadcastReceiver when app is destroyed.
+        //if (receiver != null) {
+        //    this.unregisterReceiver(receiver);
+        //}
+    }
 
+    /**
+     * Transform host name in int value used by {@link ConnectivityManager.requestRouteToHost}
+     * method
+     *
+     * @param hostname
+     * @return -1 if the host doesn't exists, elsewhere its translation
+     * to an integer
+     */
+    private static int lookupHost(String hostname) {
+        InetAddress inetAddress;
+        try {
+            inetAddress = InetAddress.getByName(hostname);
+        } catch (UnknownHostException e) {
+            return -1;
+        }
+        byte[] addrBytes;
+        int addr;
+        addrBytes = inetAddress.getAddress();
+        addr = ((addrBytes[3] & 0xff) << 24)
+                | ((addrBytes[2] & 0xff) << 16)
+                | ((addrBytes[1] & 0xff) << 8 )
+                |  (addrBytes[0] & 0xff);
+        return addr;
     }
 }

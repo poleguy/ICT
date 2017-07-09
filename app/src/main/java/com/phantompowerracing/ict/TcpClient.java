@@ -1,11 +1,18 @@
 package com.phantompowerracing.ict;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkInfo;
+import android.net.NetworkRequest;
 import android.util.Log;
 import java.io.*;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 
 /**
  * Description
@@ -29,14 +36,16 @@ public class TcpClient {
     private PrintWriter mBufferOut;
     // used to read messages from the server
     private BufferedReader mBufferIn;
+    private Context context;
 
     /**
      * Constructor of the class. OnMessagedReceived listens for the messages received from server
      */
-    public TcpClient(String ip_address, int port, OnMessageReceived listener) {
+    public TcpClient(String ip_address, int port, OnMessageReceived listener, Context newContext) {
         mServerIp = ip_address;
         mServerPort = port;
         mMessageListener = listener;
+        context = newContext;
     }
 
     /**
@@ -82,47 +91,162 @@ public class TcpClient {
 
             Log.e("TCP Client", String.format("C: Connecting... %s %d",mServerIp,mServerPort));
 
-            //create a socket to make the connection with the server
-            Socket socket = new Socket(serverAddr, mServerPort);
 
-            try {
 
-                //sends the message to the server
-                mBufferOut = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
 
-                //receives the message which the server sends back
-                mBufferIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                // send login name
-                sendMessage(Constants.LOGIN_NAME+"Kazy");
+            // before connecting to car, let's set up a route
 
-                //in this while the client listens for the messages sent by the server
-                while (mRun) {
+            //http://stackoverflow.com/questions/2513713/how-to-use-3g-connection-in-android-application-instead-of-wi-fi/4756630#4756630
+            ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (null == cm) {
+                Log.d("ICT", "ConnectivityManager is null, cannot try to force a mobile connection");
+            }
+            NetworkRequest.Builder request = new NetworkRequest.Builder();
+            //request.addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+            //request.addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR);
+            request.addTransportType(NetworkCapabilities.TRANSPORT_WIFI);
+            //.setNetworkSpecifier("00:1a:70:ee:69:b6"); // 244Wesley
+            //.setNetworkSpecifier("001a70ee69b6"); // 244Wesley
+            //.setNetworkSpecifier("244Wesley_708-848-3835"); // 244Wesley
+            //.setNetworkSpecifier("1a:fe:34:dc:e4:ac"); // ESP_DCE4AC
+            final NetworkRequest nr = request.build();
 
-                    try {
-                        mServerMessage = mBufferIn.readLine();
-                    } catch (SocketException e) {
-                        // ignore
-                        Log.e("TcpClient", "S: Handling Socket Closed in read");
+            cm.requestNetwork(nr, new ConnectivityManager.NetworkCallback() {
+                @Override
+                public void onAvailable(Network network) {
 
-                    }
 
-                    if (mServerMessage != null && mMessageListener != null) {
-                        //call the method messageReceived from MyActivity class
-                        mMessageListener.messageReceived(mServerMessage);
-                    }
-
+                    //WifiManager wifiManager = (WifiManager) getSystemService (Context.WIFI_SERVICE);
+                    //WifiInfo info = wifiManager.getConnectionInfo ();
+                    //String ssid  = info.getSSID();
+                    //Log.d("IctNetwork","onAvailable" + ssid);
+                    Log.d("TcpClient","onAvailable");
+                    //if (ssid == "ESP_DCE4AC") {
+                    //    ConnectivityManager.setProcessDefaultNetwork(network);
+                    //ConnectivityManager.NetworkCallback networkCallback = new ConnectivityManager.NetworkCallback();
+                    //cm.requestNetwork(nr, networkCallback );
+                    //}
+                    ConnectivityManager.setProcessDefaultNetwork(network);
+                    //http://stackoverflow.com/questions/2513713/how-to-use-3g-connection-in-android-application-instead-of-wi-fi/4756630#4756630
+                    //InetAddress ip = null;
+                    //try {
+                    //    ip = InetAddress.getByName("192.168.4.1");
+                    //} catch (UnknownHostException e) {
+                    //    e.printStackTrace();
+                    //}
+                    //int address = ByteBuffer.wrap(ip.getAddress()).getInt();
+                    //cm.requestRouteToHost(ConnectivityManager.TYPE_WIFI, address);
+                    //cm.bindProcessToNetwork(network);
+                    //ConnectivityManager.bindProcessToNetwork();
                 }
+                @Override
+                public void onLosing(Network network, int ms) {
+                    Log.d("IctNetwork","onLosing");
+                }
+                @Override
+                public void onLost(Network network) {
+                    Log.d("IctNetwork","onLost");
+                }
+            });
 
-                Log.e("RESPONSE FROM SERVER", "S: Received Message: '" + mServerMessage + "'");
 
-            } catch (Exception e) {
+//
+//
+//            //check if mobile connection is available and connected
+//            NetworkInfo.State state = connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI).getState();
+//            Log.d("ICT", "TYPE_MOBILE_HIPRI network state: " + state);
+//            if (0 == state.compareTo(NetworkInfo.State.CONNECTED) || 0 == state.compareTo(NetworkInfo.State.CONNECTING)) {
+//            }
+//
+//            //activate mobile connection in addition to other connection already activated
+//            //int resultInt = connectivityManager.startUsingNetworkFeature(ConnectivityManager.TYPE_WIFI, "enableHIPRI");
+//            //Log.d("ICT", "startUsingNetworkFeature for enableHIPRI result: " + resultInt);
+//
+//
+//            //create a route for the specified address
+//            int hostAddress = lookupHost(mServerIp);
+//            if (-1 == hostAddress) {
+//                Log.e("ICT", "Wrong host address transformation, result was -1");
+//            }
+//            //wait some time needed to connection manager for waking up
+//            try {
+//                for (int counter=0; counter<30; counter++) {
+//                    NetworkInfo.State checkState = connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI).getState();
+//                    if (0 == checkState.compareTo(NetworkInfo.State.CONNECTED))
+//                        break;
+//                    Thread.sleep(1000);
+//                }
+//            } catch (InterruptedException e) {
+//                //nothing to do
+//            }
+//            boolean resultBool = connectivityManager.requestRouteToHost(ConnectivityManager.TYPE_WIFI, hostAddress);
+//            Log.d("ICT", "requestRouteToHost result: " + resultBool);
+//            if (!resultBool)
+//                Log.e("ICT", "Wrong requestRouteToHost result: expected true, but was false");
+//
+//            Network nw;
+//
+//            nw.getSocketFactory();
 
-                Log.e("TCP", "S: Error", e);
 
-            } finally {
-                //the socket must be closed. It is not possible to reconnect to this socket
-                // after it is closed, which means a new socket instance has to be created.
-                socket.close();
+            boolean connected = false;
+            //wait some time needed to connection manager for waking up
+//            try {
+//                for (int counter=0; counter<30; counter++) {
+                    NetworkInfo.State checkState = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI).getState();
+                    if (0 == checkState.compareTo(NetworkInfo.State.CONNECTED)) {
+                        connected = true;
+                        //break;
+                    }
+//                    Thread.sleep(1000);
+//                }
+//            } catch (InterruptedException e) {
+//                //nothing to do
+//            }
+
+            if (connected == true) {
+                //create a socket to make the connection with the server
+                Socket socket = new Socket(serverAddr, mServerPort);
+
+                try {
+
+                    //sends the message to the server
+                    mBufferOut = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
+
+                    //receives the message which the server sends back
+                    mBufferIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                    // send login name
+                    sendMessage(Constants.LOGIN_NAME + "Kazy");
+
+                    //in this while the client listens for the messages sent by the server
+                    while (mRun) {
+
+                        try {
+                            mServerMessage = mBufferIn.readLine();
+                        } catch (SocketException e) {
+                            // ignore
+                            Log.e("TcpClient", "S: Handling Socket Closed in read");
+
+                        }
+
+                        if (mServerMessage != null && mMessageListener != null) {
+                            //call the method messageReceived from MyActivity class
+                            mMessageListener.messageReceived(mServerMessage);
+                        }
+
+                    }
+
+                    Log.e("RESPONSE FROM SERVER", "S: Received Message: '" + mServerMessage + "'");
+
+                } catch (Exception e) {
+
+                    Log.e("TCP", "S: Error", e);
+
+                } finally {
+                    //the socket must be closed. It is not possible to reconnect to this socket
+                    // after it is closed, which means a new socket instance has to be created.
+                    socket.close();
+                }
             }
 
         } catch (ConnectException e) {
@@ -145,4 +269,30 @@ public class TcpClient {
     public interface OnMessageReceived {
         public void messageReceived(String message);
     }
+
+    /**
+     * Transform host name in int value used by {@link ConnectivityManager.requestRouteToHost}
+     * method
+     *
+     * @param hostname
+     * @return -1 if the host doesn't exists, elsewhere its translation
+     * to an integer
+     */
+    private static int lookupHost(String hostname) {
+        InetAddress inetAddress;
+        try {
+            inetAddress = InetAddress.getByName(hostname);
+        } catch (UnknownHostException e) {
+            return -1;
+        }
+        byte[] addrBytes;
+        int addr;
+        addrBytes = inetAddress.getAddress();
+        addr = ((addrBytes[3] & 0xff) << 24)
+                | ((addrBytes[2] & 0xff) << 16)
+                | ((addrBytes[1] & 0xff) << 8 )
+                |  (addrBytes[0] & 0xff);
+        return addr;
+    }
+
 }

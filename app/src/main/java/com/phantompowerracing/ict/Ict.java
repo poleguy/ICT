@@ -342,7 +342,7 @@ public class Ict {
                     //this method calls the onProgressUpdate
                     publishProgress(message);
                 }
-            });
+            }, context);
             mTcpClient.run();
 
             return null;
@@ -413,7 +413,7 @@ public class Ict {
                     // 1/1008 = 1/500*60 sec/min/3.6(pulley ratio)*10*pi/rev/1056 MPH/(in/min)
                     double speed = (double) bitSliceGet(reg.data, 31, 16) / 1008.0;
                     mph1 = speed;
-                    rpm1 = fi(bitSliceGet(reg.data, 31, 16), 1, 15, 0) / 500 * 60; // rpm
+                    rpm1 = fi(bitSliceGet(reg.data, 31, 16), 1, 0, 15) * 125.0 * 60.0; // rpm
                     for (SpeedCallback callback : callbacks) {
                         callback.setSpeed(speed);
                     }

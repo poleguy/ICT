@@ -26,6 +26,12 @@
             android:entries="@array/normalSpeed"
             android:entryValues="@array/normalSpeedValues"
             />
+        <EditTextPreference
+            android:key="min_rate"
+            android:summary="Relative music rate when stopped"
+            android:title="Minimum Playback Rate"
+            android:defaultValue="0.9"
+            />
         <CheckBoxPreference
             android:key="perform_updates"
             android:summary="Enable or disable data updates"
