@@ -232,16 +232,16 @@ public class IctActivity extends AppCompatActivity implements
             Log.e("ICT", "Wrong host address transformation, result was -1");
         }
         //wait some time needed to connection manager for waking up
-        try {
-            for (int counter=0; counter<30; counter++) {
-                NetworkInfo.State checkState = connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI).getState();
-                if (0 == checkState.compareTo(NetworkInfo.State.CONNECTED))
-                    break;
-                Thread.sleep(1000);
-            }
-        } catch (InterruptedException e) {
+        //try {
+        //    for (int counter=0; counter<30; counter++) {
+         //       NetworkInfo.State checkState = connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI).getState();
+         //       if (0 == checkState.compareTo(NetworkInfo.State.CONNECTED))
+         //           break;
+         //       Thread.sleep(1000);
+         //   }
+        //} catch (InterruptedException e) {
             //nothing to do
-        }
+        //}
         boolean resultBool = connectivityManager.requestRouteToHost(ConnectivityManager.TYPE_WIFI, hostAddress);
         Log.d("ICT", "requestRouteToHost result: " + resultBool);
         if (!resultBool)
@@ -622,8 +622,9 @@ public class IctActivity extends AppCompatActivity implements
         //http://stackoverflow.com/questions/17844511/android-preferences-error-string-cannot-be-cast-to-int
         int normalSpeed = Integer.parseInt(sharedPreferences.getString("normal_speed", "20"));
         double minRate = Double.parseDouble(sharedPreferences.getString("min_rate", "0.9"));
+        double nominalRate = Double.parseDouble(sharedPreferences.getString("nominal_rate", "2.0"));
         //double minRate = 0.9;
-        double slope = (1.0-minRate);
+        double slope = (nominalRate-minRate);
 
         m_relative_speed =  minRate+slope*mSpeed/(normalSpeed);
 

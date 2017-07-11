@@ -32,6 +32,12 @@
             android:title="Minimum Playback Rate"
             android:defaultValue="0.9"
             />
+        <EditTextPreference
+            android:key="nominal_rate"
+            android:summary="Relative music rate when going nominal speed"
+            android:title="Nominal Playback Rate"
+            android:defaultValue="2.0"
+            />
         <CheckBoxPreference
             android:key="perform_updates"
             android:summary="Enable or disable data updates"

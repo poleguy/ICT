@@ -21,24 +21,6 @@
         android:layout_alignParentTop="true"
         android:layout_toEndOf="@+id/buttonClearLogs" />
 
-    <TextView
-        android:id="@+id/textViewCurrent"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Motor Current"
-        android:layout_alignParentTop="true"
-        android:layout_toEndOf="@+id/textViewThrottle"
-        android:layout_marginStart="13dp" />
-
-    <TextView
-        android:id="@+id/textViewPwm"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="PWM"
-        android:layout_alignParentTop="true"
-        android:layout_toEndOf="@+id/textViewCurrent"
-        android:layout_marginStart="33dp" />
-
     <ImageButton
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -104,5 +86,22 @@
         android:src="@drawable/dot"
         android:layout_alignBottom="@+id/buttonUpload"
         android:layout_toEndOf="@+id/current_speed_mph" />
+
+    <TextView
+        android:id="@+id/textViewCurrent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Motor Current"
+        android:layout_alignParentTop="true"
+        android:layout_toEndOf="@+id/relative_playback_speed"
+        android:layout_marginStart="39dp" />
+
+    <TextView
+        android:id="@+id/textViewPwm"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="PWM"
+        android:layout_below="@+id/textViewCurrent"
+        android:layout_centerHorizontal="true" />
 
 </RelativeLayout>
