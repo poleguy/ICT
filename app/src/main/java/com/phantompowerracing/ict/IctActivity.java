@@ -414,11 +414,18 @@ public class IctActivity extends AppCompatActivity implements
         smoothHandler.postDelayed(new Runnable() {
             public void run () {
                 // filter every 100msec
-
+                float vol = 0.0f;
                 double alpha = 0.05;
                 smoothedRate = m_relative_speed * alpha + smoothedRate * (1.0 - alpha);
+                // turn down the volume when stopped
+                if (smoothedRate < 0.81) {
+                    vol = 0.1f;
+                } else {
+                    vol = 1.0f;
+                }
                 if (audioPlayer != null) {
                     audioPlayer.setPlaybackSpeed(smoothedRate);
+                    audioPlayer.setVolume(vol);
                 }
                 //Log.d("smooth", "new rate " + smoothedRate);
                 smoothHandler.postDelayed(this,delay);
@@ -661,14 +668,17 @@ public class IctActivity extends AppCompatActivity implements
             mSpeed = normalSpeed * 1.5 * MPH_IN_METERS_PER_SECOND;
             mGpsSpeed = location.getSpeed() * MPH_IN_METERS_PER_SECOND;
         } else if(useCar) {
-            //
+            //don't set mSpeed here, as it will be set from the car
             mGpsSpeed = location.getSpeed() * MPH_IN_METERS_PER_SECOND;
         } else
         {
+            // using gps
             mSpeed = location.getSpeed() * MPH_IN_METERS_PER_SECOND;
             mGpsSpeed = mSpeed;
 
         }
+        // update car for logging
+        ict.gpsUpdate(mGpsSpeed);
         setPlaybackSpeed();
 
         updateSpeedInViews();

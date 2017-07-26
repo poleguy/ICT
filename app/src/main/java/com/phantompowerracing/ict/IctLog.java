@@ -43,6 +43,8 @@ public class IctLog {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
+            // add header
+            text = "timestamp,type,address,data,rpm1,pwm1,i1,gps_speed_mph\n" + text;
         }
         try
         {

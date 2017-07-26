@@ -35,6 +35,7 @@ public class Ict {
     public double mph2 = 0.0;
     public double rpm1 = 0.0;
     public double rpm2 = 0.0;
+    public double gps_speed_mph = 0.0;
 
 
 
@@ -422,10 +423,17 @@ public class Ict {
                     readRate = goodReadCount / (tRes * 1e-9);
                 }
                 // log everything to analyze later
-                ictLog.append(String.format(Locale.US, "%s, reg, %08x, %08x, %.1f, %.1f, %.1f", IctLog.timestamp(),
-                        reg.address, reg.data, rpm1, pwm1, i1));
+                ictLog.append(String.format(Locale.US, "%s, reg, %08x, %08x, %.1f, %.1f, %.1f, %.1f", IctLog.timestamp(),
+                        reg.address, reg.data, rpm1, pwm1, i1,gps_speed_mph));
             }
         }
+    }
+
+    void gpsUpdate(double speed) {
+        gps_speed_mph = speed;
+        // log everything to analyze later
+        ictLog.append(String.format(Locale.US, "%s, gps, %08x, %08x, %.1f, %.1f, %.1f, %.1f", IctLog.timestamp(),
+                0x00, 0x00, rpm1, pwm1, i1,gps_speed_mph));
     }
 
     // http://stackoverflow.com/questions/541487/implements-runnable-vs-extends-thread?rq=1

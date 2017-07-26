@@ -39,6 +39,7 @@ public class AudioPlayer implements Runnable {
     private boolean isPaused = true;
     //MediaCodec codec = MediaCodec.createByCodecName(name);
     private MediaCodec decoder;
+    //private float vol = 0.1f;
     MediaFormat mOutputFormat;
     boolean isEOS = false;
     boolean sawOutputEOS = true;
@@ -108,6 +109,10 @@ public class AudioPlayer implements Runnable {
         Log.d("pause", "pause");
         isPaused = true;
         //audioTrack.pause();
+    }
+
+    public void setVolume(float vol) {
+        audioTrack.setVolume(vol);
     }
 
     HandlerThread callbackThread;
@@ -185,6 +190,7 @@ public class AudioPlayer implements Runnable {
 
                     if (chunk.length > 0) {
                         audioTrack.write(chunk, 0, chunk.length);
+
                         //audio_track_write(chunk);
                         //Log.d("DecodeActivity", "playing chunk " + chunk.length);
                         //Log.d("onOutput","thread: " + android.os.Process.myTid());
