@@ -3,8 +3,8 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
     <PreferenceCategory
-        android:title="First Category"
-        android:key="first_category">
+        android:title="Settings"
+        android:key="Settings_Category">
 
         <CheckBoxPreference
             android:key="random_speed"
@@ -37,6 +37,30 @@
             android:summary="Relative music rate when going nominal speed"
             android:title="Nominal Playback Rate"
             android:defaultValue="2.0"
+            />
+        <EditTextPreference
+            android:key="alpha"
+            android:summary="Speed smoothing constant."
+            android:title="Speed Rate Smoothing Constant: Alpha"
+            android:defaultValue="0.05"
+            />
+        <EditTextPreference
+            android:key="quiet_rate"
+            android:summary="When below this rate, the volume will be dropped. Set above Minimum Playback Rate to be effective."
+            android:title="Auto Quieting Rate"
+            android:defaultValue="0.81"
+            />
+        <EditTextPreference
+            android:key="volume_reduction"
+            android:summary="How much to reduce the volume when stopped"
+            android:title="Volume Reduction (dB)"
+            android:defaultValue="-10.0"
+        />
+        <EditTextPreference
+            android:key="alpha_volume"
+            android:summary="Volume smoothing constant."
+            android:title="Volume Smoothing Constant: Alpha"
+            android:defaultValue="0.05"
             />
         <CheckBoxPreference
             android:key="perform_updates"
@@ -72,20 +96,6 @@
             android:title="Use Car Speed"
             android:defaultValue="true"
             />
-    </PreferenceCategory>
-
-    <PreferenceCategory
-        android:title="Second Category"
-        android:key="second_category">
-
-        <EditTextPreference
-            android:key="welcome_message"
-            android:title="Welcome Message"
-            android:summary="Define the Welcome message to be shown"
-            android:dialogTitle="Welcome Message"
-            android:dialogMessage="Provide a message"
-            android:defaultValue="Default welcome message" />
-
     </PreferenceCategory>
 
 </PreferenceScreen>

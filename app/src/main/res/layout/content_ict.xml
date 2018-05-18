@@ -49,12 +49,12 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Speed"
+        android:text="36.0"
         android:textAppearance="@android:style/TextAppearance.Material.Small"
         android:id="@+id/current_speed_mph"
         android:layout_below="@+id/relative_playback_speed"
         android:layout_alignParentStart="true"
-        android:textSize="30sp" />
+        android:textSize="140sp" />
 
     <TextView
         android:id="@+id/settings_text_view"
@@ -101,7 +101,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="PWM"
-        android:layout_below="@+id/textViewCurrent"
-        android:layout_centerHorizontal="true" />
+        android:layout_above="@+id/current_speed_mph"
+        android:layout_alignStart="@+id/textViewCurrent" />
 
 </RelativeLayout>

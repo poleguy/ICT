@@ -69,10 +69,11 @@ public class IctActivity extends AppCompatActivity implements
         LocationListener{
 
     private final AudioPlayer audioPlayer = new AudioPlayer("ICT_turkey.wav");
-
+    
     Handler smoothHandler = new Handler();
     int delay = 100; // msec
     double smoothedRate = 0.0;
+    double smoothedVolume = 0.0;
 
     private PowerManager mPowerManager;
     private PowerManager.WakeLock mWakeLock;
@@ -190,7 +191,7 @@ public class IctActivity extends AppCompatActivity implements
 //                });
 
 
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         String ip_address = sharedPreferences.getString("car_ip_address", "192.168.2.74");
         int ip_port = Integer.parseInt(sharedPreferences.getString("car_ip_port", "23"));
 
@@ -414,18 +415,28 @@ public class IctActivity extends AppCompatActivity implements
         smoothHandler.postDelayed(new Runnable() {
             public void run () {
                 // filter every 100msec
-                float vol = 0.0f;
-                double alpha = 0.05;
+                double vol = 0.0f;
+
+
+                double alpha = Double.parseDouble(sharedPreferences.getString("alpha", "0.05"));
+                double alphaVolume = Double.parseDouble(sharedPreferences.getString("alpha_volume", "0.05"));
+                double quietRate = Double.parseDouble(sharedPreferences.getString("quiet_rate", "0.81"));
+                double volumeReduction = Double.parseDouble(sharedPreferences.getString("volume_reduction", "-10.0"));
+
                 smoothedRate = m_relative_speed * alpha + smoothedRate * (1.0 - alpha);
+
                 // turn down the volume when stopped
-                if (smoothedRate < 0.81) {
-                    vol = 0.1f;
+                if (smoothedRate < quietRate) {
+                    vol = Math.pow(10,volumeReduction/10);
                 } else {
                     vol = 1.0f;
                 }
+                // smooth the volume
+                smoothedVolume = vol * alphaVolume + smoothedVolume * (1.0 - alphaVolume);
+
                 if (audioPlayer != null) {
                     audioPlayer.setPlaybackSpeed(smoothedRate);
-                    audioPlayer.setVolume(vol);
+                    audioPlayer.setVolume(smoothedVolume);
                 }
                 //Log.d("smooth", "new rate " + smoothedRate);
                 smoothHandler.postDelayed(this,delay);
@@ -628,7 +639,7 @@ public class IctActivity extends AppCompatActivity implements
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         //http://stackoverflow.com/questions/17844511/android-preferences-error-string-cannot-be-cast-to-int
         int normalSpeed = Integer.parseInt(sharedPreferences.getString("normal_speed", "20"));
-        double minRate = Double.parseDouble(sharedPreferences.getString("min_rate", "0.9"));
+        double minRate = Double.parseDouble(sharedPreferences.getString("min_rate", "0.8"));
         double nominalRate = Double.parseDouble(sharedPreferences.getString("nominal_rate", "2.0"));
         //double minRate = 0.9;
         double slope = (nominalRate-minRate);
@@ -703,7 +714,8 @@ public class IctActivity extends AppCompatActivity implements
             s = String.format("throttle: %.1f A, %.1f A", ict.iThrottle1, ict.iThrottle2);
             mTextViewThrottle.setText(s);
 
-            s = String.format("speed %.1f MPH, %.1f rpm\nGPS speed %.1f MPH\n good reads: %d, total reads: %d", mSpeed, mGpsSpeed, ict.rpm1, ict.goodReadCount,ict.totalReadCount);
+            //s = String.format("speed %.1f MPH, %.1f rpm\nGPS speed %.1f MPH\n good reads: %d, total reads: %d", mSpeed, mGpsSpeed, ict.rpm1, ict.goodReadCount,ict.totalReadCount);
+            s = String.format("%.1f",mSpeed);
             mCurrentSpeedMphTextView.setText(s);
             mRelativePlaybackSpeedTextView.setText(String.format(getString(R.string.playback_speed_format), m_relative_speed));
 

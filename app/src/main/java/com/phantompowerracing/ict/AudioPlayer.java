@@ -111,8 +111,8 @@ public class AudioPlayer implements Runnable {
         //audioTrack.pause();
     }
 
-    public void setVolume(float vol) {
-        audioTrack.setVolume(vol);
+    public void setVolume(double vol) {
+        audioTrack.setVolume((float)vol);
     }
 
     HandlerThread callbackThread;
