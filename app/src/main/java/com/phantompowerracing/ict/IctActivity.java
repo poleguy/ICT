@@ -243,10 +243,10 @@ public class IctActivity extends AppCompatActivity implements
         //} catch (InterruptedException e) {
             //nothing to do
         //}
-        boolean resultBool = connectivityManager.requestRouteToHost(ConnectivityManager.TYPE_WIFI, hostAddress);
-        Log.d("ICT", "requestRouteToHost result: " + resultBool);
-        if (!resultBool)
-            Log.e("ICT", "Wrong requestRouteToHost result: expected true, but was false");
+//        boolean resultBool = connectivityManager.requestRouteToHost(ConnectivityManager.TYPE_WIFI, hostAddress);
+//        Log.d("ICT", "requestRouteToHost result: " + resultBool);
+//        if (!resultBool)
+//            Log.e("ICT", "Wrong requestRouteToHost result: expected true, but was false");
 
         //try {
         //    ip = InetAddress.getByName("192.168.4.1");
