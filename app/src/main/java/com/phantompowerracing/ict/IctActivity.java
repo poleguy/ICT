@@ -6,7 +6,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -17,7 +16,6 @@ import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
 import android.net.NetworkRequest;
 import android.net.wifi.WifiConfiguration;
-import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -52,7 +50,6 @@ import com.google.android.gms.location.LocationServices;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
 import java.util.Random;
 
 //import java.util.ArrayList;
@@ -74,7 +71,7 @@ public class IctActivity extends AppCompatActivity implements
         SpeedCallback,
         LocationListener{
 
-    private final AudioPlayer audioPlayer = new AudioPlayer( this,"ict_turkey_wav");
+
     
     Handler smoothHandler = new Handler();
     int delay = 100; // msec
@@ -92,6 +89,9 @@ public class IctActivity extends AppCompatActivity implements
     // The BroadcastReceiver that tracks network connectivity changes.
     //private NetworkReceiver receiver = new NetworkReceiver();
 
+    //https://stackoverflow.com/questions/3875184/cant-create-handler-inside-thread-that-has-not-called-looper-prepare
+
+    private final AudioPlayer audioPlayer = new AudioPlayer( this, "ict_turkey_wav");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

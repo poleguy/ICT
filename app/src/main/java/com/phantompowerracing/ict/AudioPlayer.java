@@ -9,6 +9,7 @@ import android.os.Environment;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
 
@@ -291,11 +292,16 @@ public class AudioPlayer implements Runnable {
                             String[] tracks = {"ICT_turkey.wav","ICT_entertainer.wav"};
                             i = (i+1)%tracks.length;
                             String track = tracks[i];
-                            Log.d("play", String.format("starting audio player: %d, %s" ,i,track));
+                            String file_status = String.format("starting audio player: %d, %s" ,i,track);
+                            Log.d("play", file_status);
 
                             // # https://developer.android.com/guide/topics/ui/notifiers/toasts
-                            //Toast.makeText(this, path, 3.0).show()
-                            statusString = path;
+
+                            //# https://stackoverflow.com/questions/3875184/cant-create-handler-inside-thread-that-has-not-called-looper-prepare
+
+                            //Toast.makeText(context, path, Toast.LENGTH_LONG).show();
+                            // this works instead of toast on a thread:
+                            statusString = file_status;
                             // can't toast here because we don't have a context?
                             audioPlayerB(path, track, DecoderCallback);
                             Log.d("play", "thread: " + android.os.Process.myTid());
