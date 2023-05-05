@@ -288,7 +288,7 @@ public class AudioPlayer implements Runnable {
                             // start a new track if the old one finished
                             //if(audioTrack.getPlayState() != audioTrack.PLAYSTATE_PAUSED) {
                             prepare();
-                            String[] tracks = {"ICT_turkey_wav","ICT_entertainer.wav"};
+                            String[] tracks = {"ICT_turkey.wav","ICT_entertainer.wav"};
                             i = (i+1)%tracks.length;
                             String track = tracks[i];
                             Log.d("play", String.format("starting audio player: %d, %s" ,i,track));

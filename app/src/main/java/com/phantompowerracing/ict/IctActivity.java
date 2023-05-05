@@ -8,6 +8,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.net.ConnectivityManager;
@@ -18,12 +19,14 @@ import android.net.NetworkRequest;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.PermissionChecker;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -44,6 +47,8 @@ import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+
+
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -76,6 +81,7 @@ public class IctActivity extends AppCompatActivity implements
     double smoothedRate = 0.0;
     double smoothedVolume = 0.0;
 
+    Context context = this;
     private PowerManager mPowerManager;
     private PowerManager.WakeLock mWakeLock;
 
@@ -343,19 +349,22 @@ public class IctActivity extends AppCompatActivity implements
 
         // Enables app to handle 23+ (M+) style permissions.
 
-        //if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-        //        != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
         // Check Permissions Now
-//            ActivityCompat.requestPermissions(this,
-//                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-//                    REQUEST_GPS_PERMISSION);
-        //} else {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    REQUEST_GPS_PERMISSION);
+        } else {
         // permission has been granted, continue as usual
-        //    mGpsPermissionApproved = true;
-        // }
-        mGpsPermissionApproved =
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                        == PackageManager.PERMISSION_GRANTED;
+            mGpsPermissionApproved = true;
+        }
+
+        mGpsPermissionApproved =selfPermissionGranted(Manifest.permission.ACCESS_FINE_LOCATION);
+
+        //mGpsPermissionApproved =
+         //       ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+          //              == PackageManager.PERMISSION_GRANTED;
 
         //mGpsPermissionNeededMessage = getString(R.string.permission_rationale);
         //mAcquiringGpsMessage = getString(R.string.acquiring_gps);
@@ -447,6 +456,35 @@ public class IctActivity extends AppCompatActivity implements
             }
         }, delay);
 
+    }
+
+    public boolean selfPermissionGranted(String permission) {
+        // For Android < Android M, self permissions are always granted.
+        boolean result = true;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+
+            int targetSdkVersion = 0;
+            try {
+                final PackageInfo info = context.getPackageManager().getPackageInfo(
+                        context.getPackageName(), 0);
+                targetSdkVersion = info.applicationInfo.targetSdkVersion;
+            } catch (PackageManager.NameNotFoundException e) {
+                e.printStackTrace();
+            }
+            if (targetSdkVersion >= Build.VERSION_CODES.M) {
+                // targetSdkVersion >= Android M, we can
+                // use Context#checkSelfPermission
+                result = context.checkSelfPermission(permission)
+                        == PackageManager.PERMISSION_GRANTED;
+            } else {
+                // targetSdkVersion < Android M, we have to use PermissionChecker
+                result = PermissionChecker.checkSelfPermission(context, permission)
+                        == PermissionChecker.PERMISSION_GRANTED;
+            }
+        }
+
+        return result;
     }
 
     public void turnOnScreen(){
