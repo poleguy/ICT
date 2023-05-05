@@ -34,6 +34,7 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -68,7 +69,7 @@ public class IctActivity extends AppCompatActivity implements
         SpeedCallback,
         LocationListener{
 
-    private final AudioPlayer audioPlayer = new AudioPlayer("ICT_turkey.wav");
+    private final AudioPlayer audioPlayer = new AudioPlayer( this,"ict_turkey_wav");
     
     Handler smoothHandler = new Handler();
     int delay = 100; // msec
@@ -289,13 +290,15 @@ public class IctActivity extends AppCompatActivity implements
                 @Override
                 public void onClick(View view) {
 //                  //audioPlayerB("/sdcard","Carmen Ring.mp3");
-//                  //audioPlayerB("/sdcard/Download","ICT_turkey.wav");
+//                  //audioPlayerB("/sdcard/Download","ict_turkey_wav");
 //                  //audioPlayerB("/data/local","tis.wav");
                     ImageButton imgButton =(ImageButton)findViewById(R.id.imageButton);
                     if(imgButton != null) {
                         if (audioPlayer.isPlaying()) {
                             audioPlayer.pause();
                             Log.d("click", "pause");
+                            String toast_msg = audioPlayer.statusString;
+                            Toast.makeText(ict.context, toast_msg, Toast.LENGTH_LONG).show();
                             imgButton.setImageResource(R.drawable.mr_ic_play_light);
                         } else {
                             audioPlayer.play();
@@ -436,7 +439,8 @@ public class IctActivity extends AppCompatActivity implements
 
                 if (audioPlayer != null) {
                     audioPlayer.setPlaybackSpeed(smoothedRate);
-                    audioPlayer.setVolume(smoothedVolume);
+                    // todo: this is disabled for debug
+                    //audioPlayer.setVolume(smoothedVolume);
                 }
                 //Log.d("smooth", "new rate " + smoothedRate);
                 smoothHandler.postDelayed(this,delay);

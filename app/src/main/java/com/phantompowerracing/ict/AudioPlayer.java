@@ -1,8 +1,11 @@
 package com.phantompowerracing.ict;
 
+import android.content.Context;
+import android.content.res.AssetFileDescriptor;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.MediaFormat;
+import android.os.Environment;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
@@ -13,6 +16,8 @@ import java.io.File;
 import android.media.MediaExtractor;
 import android.media.MediaCodec;
 import android.media.AudioTrack;
+
+import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -20,11 +25,13 @@ import android.os.Handler;
 
 
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.wearable.Asset;
 
 
 import java.util.concurrent.TimeUnit;
 
 import android.widget.TextView;
+import android.widget.Toast;
 
 /**
  * Created by poleguy on 8/4/2016.
@@ -46,10 +53,15 @@ public class AudioPlayer implements Runnable {
     long extractorSampleTime = 0;
     double m_relative_speed = 0.3;
     int mPlaybackRate;
+    private Context context;
 
-    public AudioPlayer(String path) {
+
+    public AudioPlayer(Context current, String path) {
+        this.context = current;
         mPath = path;
     }
+
+    public String statusString = "Idle";
 
     private void prepare() {
 
@@ -77,7 +89,7 @@ public class AudioPlayer implements Runnable {
         extractorSampleTime = 0;
 
         //audioPlayerB("/sdcard","Carmen Ring.mp3");
-        //audioPlayerB("/sdcard/Download","ICT_turkey.wav");
+        //audioPlayerB("/sdcard/Download","ict_turkey_wav");
         //audioPlayerB("/data/local","tis.wav");
 
         //mSpeedLimit = sharedPreferences.getInt(PREFS_SPEED_LIMIT_KEY, SPEED_LIMIT_DEFAULT_MPH);
@@ -136,6 +148,7 @@ public class AudioPlayer implements Runnable {
         // We use a single thread here for decoding stream data and
         // writing to the AudioTrack. Consider using a seperate thread for each task.
         //prepare();
+        String path = Environment.getDownloadCacheDirectory().getAbsolutePath();
 
         MediaCodec.Callback DecoderCallback = new MediaCodec.Callback() {
             @Override
@@ -230,7 +243,8 @@ public class AudioPlayer implements Runnable {
         Log.d("run", "Playing");
         prepare();
         Log.d("play", "starting audio player");
-        audioPlayerB("/sdcard/Download", "ICT_turkey.wav",DecoderCallback);
+
+        audioPlayerB(path, "ICT_turkey.wav",DecoderCallback);
         Log.d("play","thread: " + android.os.Process.myTid());
         //audioPlayerB("/data/local","tis.wav");
         int i = 0;
@@ -258,7 +272,8 @@ public class AudioPlayer implements Runnable {
                             i = (i+1)%tracks.length;
                             String track = tracks[i];
                             Log.d("play", String.format("starting audio player: %d, %s" ,i,track));
-                            audioPlayerB("/sdcard/Download", track, DecoderCallback);
+
+                            audioPlayerB(path, track, DecoderCallback);
                             Log.d("play", "thread: " + android.os.Process.myTid());
                             //}
                         }
@@ -273,11 +288,16 @@ public class AudioPlayer implements Runnable {
                             // start a new track if the old one finished
                             //if(audioTrack.getPlayState() != audioTrack.PLAYSTATE_PAUSED) {
                             prepare();
-                            String[] tracks = {"ICT_turkey.wav","ICT_entertainer.wav"};
+                            String[] tracks = {"ICT_turkey_wav","ICT_entertainer.wav"};
                             i = (i+1)%tracks.length;
                             String track = tracks[i];
                             Log.d("play", String.format("starting audio player: %d, %s" ,i,track));
-                            audioPlayerB("/sdcard/Download", track, DecoderCallback);
+
+                            // # https://developer.android.com/guide/topics/ui/notifiers/toasts
+                            //Toast.makeText(this, path, 3.0).show()
+                            statusString = path;
+                            // can't toast here because we don't have a context?
+                            audioPlayerB(path, track, DecoderCallback);
                             Log.d("play", "thread: " + android.os.Process.myTid());
                             //}
                         }
@@ -306,7 +326,11 @@ public class AudioPlayer implements Runnable {
         extractor = new MediaExtractor();
 
         try {
-            extractor.setDataSource(path + File.separator + fileName);
+            AssetFileDescriptor afd = context.getAssets().openFd(fileName);
+            //extractor.setDataSource(path + File.separator + fileName);
+            //AssetFileDescriptor afd=context.getResources().openRawResourceFd(R.raw.ict_turkey_wav);
+            //FileDescriptor fd = afd.getFileDescriptor();
+            extractor.setDataSource(afd.getFileDescriptor(),afd.getStartOffset(),afd.getLength());
             int numTracks = extractor.getTrackCount();
             for (int i = 0; i < numTracks; ++i) {
                 MediaFormat format = extractor.getTrackFormat(i);

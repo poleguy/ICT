@@ -91,7 +91,7 @@
         android:id="@+id/textViewCurrent"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Motor Current"
+        android:text="Version 0.0.0.0"
         android:layout_alignParentTop="true"
         android:layout_toEndOf="@+id/relative_playback_speed"
         android:layout_marginStart="39dp" />
@@ -100,8 +100,12 @@
         android:id="@+id/textViewPwm"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="PWM"
         android:layout_above="@+id/current_speed_mph"
-        android:layout_alignStart="@+id/textViewCurrent" />
+        android:layout_below="@+id/buttonUpload"
+        android:layout_alignStart="@+id/textViewCurrent"
+        android:layout_marginStart="43dp"
+        android:layout_marginTop="64dp"
+        android:layout_marginBottom="-318dp"
+        android:text="PWM" />
 
 </RelativeLayout>
